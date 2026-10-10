@@ -21,6 +21,7 @@ const LABEL: Record<CheckId, string> = {
   goal: 'GOAL',
   constraints: 'CONSTRAINTS',
   output: 'OUTPUT',
+  custom: 'YOUR RULES',
 };
 
 function useStored<T>(item: { getValue(): Promise<T>; watch(cb: (v: T) => void): () => void }, initial: T) {

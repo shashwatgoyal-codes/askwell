@@ -1,6 +1,7 @@
 import { analyze, type Analysis } from './analyze';
+import { runCustomRules, type CustomRule } from './custom';
 
-export type CheckId = 'assumedMemory' | 'context' | 'goal' | 'constraints' | 'output';
+export type CheckId = 'assumedMemory' | 'context' | 'goal' | 'constraints' | 'output' | 'custom';
 
 export type Sensitivity = 'relaxed' | 'balanced' | 'strict';
 
@@ -10,6 +11,8 @@ export interface Gap {
   message: string;
   /** How to fix it. */
   hint: string;
+  /** For a custom rule: its name, since every custom gap shares the id "custom". */
+  title?: string;
 }
 
 export interface CheckOptions {
@@ -17,6 +20,8 @@ export interface CheckOptions {
   sensitivity?: Sensitivity;
   /** Checks the user has switched off. */
   disabled?: readonly CheckId[];
+  /** The person's own rules, run after the built-in checks. */
+  customRules?: readonly CustomRule[];
 }
 
 interface Check {
@@ -168,6 +173,12 @@ export function runChecks(prompt: string, options: CheckOptions = {}): Gap[] {
     const gap = check.run(prompt, a, level);
     if (gap) gaps.push({ id: check.id, ...gap });
   }
+  if (!disabled.has('custom')) {
+    for (const { rule, message } of runCustomRules(prompt, options.customRules ?? [])) {
+      gaps.push({ id: 'custom', title: rule.name, message, hint: 'From your own rules in Preflight’s settings.' });
+    }
+  }
   return gaps;
 }
+export { runCustomRules, type CustomRule } from './custom';
 export { checkSession, type Nudge, type NudgeId, type Session } from './session';

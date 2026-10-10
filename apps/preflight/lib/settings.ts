@@ -1,4 +1,4 @@
-import type { CheckId, Sensitivity } from '@askwell/rules';
+import type { CheckId, CustomRule, Sensitivity } from '@askwell/rules';
 import { storage } from '#imports';
 
 // Everything here lives in storage.local: on this device, never synced.
@@ -16,6 +16,14 @@ export const disabledChecks = storage.defineItem<CheckId[]>('local:disabledCheck
 export const disabledSites = storage.defineItem<string[]>('local:disabledSites', {
   fallback: [],
 });
+
+/** The person's own checks, written in settings. */
+export const customRules = storage.defineItem<CustomRule[]>('local:customRules', {
+  fallback: [],
+});
+
+/** Enough for anyone's house rules; keeps the panel and settings manageable. */
+export const MAX_CUSTOM_RULES = 20;
 
 /** Nudges about habits across the conversation, separate from the per-prompt checks. */
 export const conversationCoaching = storage.defineItem<boolean>('local:conversationCoaching', {

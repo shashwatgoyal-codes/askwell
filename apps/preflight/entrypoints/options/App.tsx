@@ -1,4 +1,4 @@
-import type { CheckId, Sensitivity } from '@askwell/rules';
+import type { CheckId, CustomRule, Sensitivity } from '@askwell/rules';
 import { useEffect, useId, useState, type ReactNode } from 'react';
 import { Mark } from '@/components/Mark';
 import type { ModelsRequest, ModelsResponse, ProbeRequest, ProbeResponse } from '@/lib/improve/contract';
@@ -7,6 +7,8 @@ import {
   apiKeys,
   clearAll,
   conversationCoaching,
+  customRules,
+  MAX_CUSTOM_RULES,
   disabledChecks,
   disabledSites,
   models,
@@ -300,10 +302,95 @@ function ChecksSection() {
   );
 }
 
+function RulesSection() {
+  const rules = useStored(customRules, [] as CustomRule[]);
+  const empty = { name: '', when: '', require: '', message: '' };
+  const [draft, setDraft] = useState(empty);
+  const ids = { name: useId(), when: useId(), require: useId(), message: useId() };
+  const full = rules.length >= MAX_CUSTOM_RULES;
+  const ready = draft.name.trim() && draft.require.trim() && !full;
+
+  const add = async () => {
+    if (!ready) return;
+    const rule: CustomRule = {
+      id: crypto.randomUUID(),
+      name: draft.name.trim(),
+      when: draft.when.trim(),
+      require: draft.require.trim(),
+      ...(draft.message.trim() ? { message: draft.message.trim() } : {}),
+    };
+    await customRules.setValue([...rules, rule]);
+    setDraft(empty);
+  };
+
+  const field = (key: keyof typeof empty, label: string, placeholder: string) => (
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={ids[key]} className="text-[13px] text-label">
+        {label}
+      </label>
+      <input
+        id={ids[key]}
+        type="text"
+        value={draft[key]}
+        placeholder={placeholder}
+        onChange={(event) => setDraft({ ...draft, [key]: event.target.value })}
+        onKeyDown={(event) => event.key === 'Enter' && void add()}
+        className={`${input} font-sans`}
+      />
+    </div>
+  );
+
+  return (
+    <Section number="03" label="YOUR RULES">
+      <p className="-mt-1 text-[13px] leading-relaxed text-muted">
+        Checks of your own, in plain words: when a prompt mentions something, it should also mention something
+        else. Separate several words with commas.
+      </p>
+      {rules.length > 0 && (
+        <ul className="flex flex-col rounded-xl border border-edge">
+          {rules.map((rule) => (
+            <li key={rule.id} className="flex items-center justify-between gap-4 px-4 py-3.5 [&+&]:border-t [&+&]:border-edge">
+              <div className="flex min-w-0 flex-col gap-0.5">
+                <span className="text-sm">{rule.name}</span>
+                <span className="truncate text-[12.5px] text-subtle">
+                  {rule.when ? `When it mentions ${rule.when}, ` : 'Every prompt '}should mention {rule.require}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => void customRules.setValue(rules.filter((r) => r.id !== rule.id))}
+                className="h-8 shrink-0 cursor-pointer rounded-lg px-3 text-[13px] text-subtle hover:bg-raised hover:text-ink"
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="flex flex-col gap-3 rounded-xl border border-dashed border-edge p-4">
+        {field('name', 'Name', 'Prisma version')}
+        <div className="grid grid-cols-2 gap-3">
+          {field('when', 'When the prompt mentions (optional)', 'prisma')}
+          {field('require', 'It should also mention', 'prisma 5, prisma 6')}
+        </div>
+        {field('message', 'Message (optional)', 'Say which Prisma version you are on.')}
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-[12.5px] text-subtle">
+            {full ? `That’s the limit of ${MAX_CUSTOM_RULES} rules.` : 'Rules run with the built-in checks and can be muted the same way.'}
+          </span>
+          <button type="button" onClick={() => void add()} disabled={!ready} className={ghost}>
+            Add rule
+          </button>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
 function DangerSection() {
   const [confirming, setConfirming] = useState(false);
   return (
-    <Section number="03" label="DANGER ZONE">
+    <Section number="04" label="DANGER ZONE">
       <div className="flex items-center justify-between gap-6 rounded-xl border border-danger-edge p-4">
         <div className="flex flex-col gap-0.5">
           <span className="text-sm">Clear local data</span>
@@ -343,6 +430,7 @@ export function App() {
         </h1>
         <ProviderSection />
         <ChecksSection />
+        <RulesSection />
         <DangerSection />
         <p className="border-t border-edge pt-6 text-[12.5px] leading-relaxed text-subtle">
           Preflight is not affiliated with, endorsed by or sponsored by OpenAI, Anthropic or Google.

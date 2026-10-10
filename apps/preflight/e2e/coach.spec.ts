@@ -108,3 +108,26 @@ test.describe('the newer sites', () => {
     await expect(page.getByText('Starting fresh?')).toHaveCount(0);
   });
 });
+
+test('a rule written in settings flags prompts on the page, under its own name', async ({ context, extensionId, site }) => {
+  const settings = await context.newPage();
+  await settings.goto(`chrome-extension://${extensionId}/options.html`);
+  await settings.getByLabel('Name').fill('Prisma version');
+  await settings.getByLabel('When the prompt mentions (optional)').fill('prisma');
+  await settings.getByLabel('It should also mention').fill('prisma 5, prisma 6');
+  await settings.getByRole('button', { name: 'Add rule' }).click();
+  await expect(settings.getByText('When it mentions prisma, should mention prisma 5, prisma 6')).toBeVisible();
+
+  const page = await site('https://chatgpt.com/');
+  await page.locator('#prompt-textarea').click();
+  await page.keyboard.type('Prisma throws P2025 on update, expected the row to change');
+  await page.getByRole('button', { name: 'Preflight: 1 gap in this prompt' }).click();
+  const panel = page.getByRole('region', { name: 'Preflight' });
+  await expect(panel.getByText('01 · Your rule · Prisma version')).toBeVisible();
+  await expect(panel.getByText('Your rule “Prisma version”: mention “prisma 5” or “prisma 6”.')).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await page.locator('#prompt-textarea').click();
+  await page.keyboard.type(' on Prisma 6');
+  await expect(page.getByRole('button', { name: 'Preflight: no gaps' })).toBeVisible();
+});

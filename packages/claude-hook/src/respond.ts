@@ -24,6 +24,7 @@ const LABEL: Record<CheckId, string> = {
   goal: 'Goal',
   constraints: 'Constraints',
   output: 'Output',
+  custom: 'Your rule',
 };
 
 /** Typed anywhere in a prompt, sends it as is in block mode. */
@@ -41,7 +42,7 @@ export function respond(prompt: string, previous: string[], options: HookOptions
   if (gaps.length === 0 && !nudge) return { code: 0 };
 
   const lines = [`Preflight · ${gaps.length ? `${gaps.length} ${gaps.length === 1 ? 'gap' : 'gaps'}` : 'a habit worth a look'}`];
-  for (const gap of gaps) lines.push(`  ${LABEL[gap.id]}: ${gap.message} ${gap.hint}`);
+  for (const gap of gaps) lines.push(`  ${gap.title ? `${LABEL.custom} (${gap.title})` : LABEL[gap.id]}: ${gap.message} ${gap.hint}`);
   if (nudge) lines.push(`  ${nudge.title} ${nudge.body}`);
 
   if (options.mode === 'block' && gaps.length > 0 && !prompt.includes(SEND_ANYWAY)) {

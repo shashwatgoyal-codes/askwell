@@ -10,7 +10,11 @@ const LABELS: Record<CheckId, string> = {
   goal: 'Goal',
   constraints: 'Constraints',
   output: 'Output',
+  custom: 'Your rule',
 };
+
+/** Custom gaps share the id "custom"; their rule name tells them apart. */
+export const gapKey = (gap: Gap): string => (gap.id === 'custom' ? `custom:${gap.title ?? ''}` : gap.id);
 
 /**
  * The panel lives on the chat site's page, whose scripts can dispatch fake
@@ -32,7 +36,7 @@ interface Props {
   draft: string;
   gaps: Gap[];
   onClose: () => void;
-  onMute: (id: CheckId) => void;
+  onMute: (key: string) => void;
   onApply: (text: string) => void;
 }
 
@@ -121,14 +125,14 @@ export function Panel({ maxHeight, draft, gaps, onClose, onMute, onApply }: Prop
               <p className="p-4 text-sm text-muted">Nothing missing. This prompt says what it needs to.</p>
             )}
             {visible.map((gap, i) => (
-              <article key={gap.id} className="flex flex-col gap-2 border-edge p-4 [&+&]:border-t">
+              <article key={gapKey(gap)} className="flex flex-col gap-2 border-edge p-4 [&+&]:border-t">
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-[11px] tracking-[0.08em] text-subtle uppercase">
-                    {String(i + 1).padStart(2, '0')} · {LABELS[gap.id]}
+                    {String(i + 1).padStart(2, '0')} · {gap.title ? `${LABELS.custom} · ${gap.title}` : LABELS[gap.id]}
                   </span>
                   <button
                     type="button"
-                    onClick={() => onMute(gap.id)}
+                    onClick={() => onMute(gapKey(gap))}
                     className="cursor-pointer rounded px-1.5 py-1 text-xs text-subtle hover:bg-raised"
                   >
                     Mute

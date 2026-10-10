@@ -1,11 +1,11 @@
-import { checkSession, runChecks, type CheckId, type Sensitivity } from '@askwell/rules';
+import { checkSession, runChecks, type CheckId, type CustomRule, type Sensitivity } from '@askwell/rules';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { conversationCoaching, disabledChecks, disabledSites, recordSent, sensitivity } from '@/lib/settings';
+import { conversationCoaching, customRules, disabledChecks, disabledSites, recordSent, sensitivity } from '@/lib/settings';
 import { findComposer, readText, readUserMessages, writeText, type Site } from '@/lib/sites';
 import { isDarkBehind } from '@/lib/theme';
 import { Badge } from './Badge';
 import { NudgeCard } from './NudgeCard';
-import { Panel } from './Panel';
+import { Panel, gapKey } from './Panel';
 
 /** How often to look for the prompt box. Sites re-render it on navigation. */
 const POLL_MS = 400;
@@ -39,13 +39,14 @@ export function Coach({ site }: { site: Site }) {
   const [loaded, setLoaded] = useState(false);
   const [dark, setDark] = useState(true);
   const [open, setOpen] = useState(false);
-  const [muted, setMuted] = useState<Set<CheckId>>(new Set());
+  const [muted, setMuted] = useState<Set<string>>(new Set());
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
   const level = useSetting<Sensitivity>(sensitivity, 'balanced');
   const disabled = useSetting<CheckId[]>(disabledChecks, []);
   const sitesOff = useSetting<string[]>(disabledSites, []);
   const coaching = useSetting<boolean>(conversationCoaching, true);
+  const rules = useSetting<CustomRule[]>(customRules, []);
   const siteOff = sitesOff.includes(site.id);
 
   // Follow the prompt box (where it is, what it says, how dark it sits) and
@@ -96,8 +97,8 @@ export function Coach({ site }: { site: Site }) {
   const words = text.trim() ? text.trim().split(/\s+/).length : 0;
 
   const gaps = useMemo(
-    () => runChecks(text, { sensitivity: level, disabled }).filter((gap) => !muted.has(gap.id)),
-    [text, level, disabled, muted],
+    () => runChecks(text, { sensitivity: level, disabled, customRules: rules }).filter((gap) => !muted.has(gapKey(gap))),
+    [text, level, disabled, rules, muted],
   );
 
   // A new message of the person's appearing means the draft was sent. Count
@@ -151,7 +152,7 @@ export function Coach({ site }: { site: Site }) {
           draft={text}
           gaps={gaps}
           onClose={() => setOpen(false)}
-          onMute={(id) => setMuted((prev) => new Set(prev).add(id))}
+          onMute={(key) => setMuted((prev) => new Set(prev).add(key))}
           onApply={(rewrite) => {
             put(rewrite);
             setOpen(false);
