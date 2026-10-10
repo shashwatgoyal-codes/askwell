@@ -17,3 +17,8 @@ dist/
 
 # Generated on every build by scripts/notices.mjs.
 apps/preflight/public/THIRD_PARTY_NOTICES.txt
+
+# The portal
+apps/portal/.next/
+apps/portal/next-env.d.ts
+apps/portal/.env.local
