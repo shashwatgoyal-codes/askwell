@@ -131,3 +131,32 @@ test('a rule written in settings flags prompts on the page, under its own name',
   await page.keyboard.type(' on Prisma 6');
   await expect(page.getByRole('button', { name: 'Preflight: no gaps' })).toBeVisible();
 });
+
+test('a prompt saved to the library can be inserted later and managed in settings', async ({ context, extensionId, site }) => {
+  const page = await site('https://chatgpt.com/');
+  const box = page.locator('#prompt-textarea');
+  await box.click();
+  await page.keyboard.type('Review this diff for race conditions and reply with a numbered list');
+  await page.getByRole('button', { name: /^Preflight/ }).click();
+  await page.getByRole('tab', { name: 'Library' }).click();
+  await page.getByRole('button', { name: 'Save prompt' }).click();
+  await expect(page.getByRole('button', { name: 'Saved' })).toBeDisabled();
+
+  await page.keyboard.press('Escape');
+  await box.evaluate((el) => {
+    el.textContent = '';
+    el.dispatchEvent(new InputEvent('input', { bubbles: true }));
+  });
+  await box.click();
+  await page.keyboard.type('something else entirely now');
+  await page.getByRole('button', { name: /^Preflight/ }).click();
+  await page.getByRole('tab', { name: 'Library' }).click();
+  await page.getByRole('button', { name: 'Insert' }).click();
+  await expect(box).toHaveText('Review this diff for race conditions and reply with a numbered list');
+
+  const settings = await context.newPage();
+  await settings.goto(`chrome-extension://${extensionId}/options.html`);
+  await expect(settings.getByText('Review this diff for race conditions and reply with a numbered list').first()).toBeVisible();
+  await settings.getByRole('button', { name: /^Delete “Review this diff/ }).click();
+  await expect(settings.getByText('Nothing saved yet.')).toBeVisible();
+});

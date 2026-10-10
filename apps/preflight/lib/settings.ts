@@ -25,6 +25,34 @@ export const customRules = storage.defineItem<CustomRule[]>('local:customRules',
 /** Enough for anyone's house rules; keeps the panel and settings manageable. */
 export const MAX_CUSTOM_RULES = 20;
 
+export interface SavedPrompt {
+  id: string;
+  title: string;
+  text: string;
+  savedAt: string;
+}
+
+/** Prompts worth reusing, newest first. Only what the person chooses to save. */
+export const library = storage.defineItem<SavedPrompt[]>('local:library', {
+  fallback: [],
+});
+
+const LIBRARY_LIMIT = 100;
+
+/** Pure, for tests: the library with this prompt saved at the top, without duplicates. */
+export function withSaved(items: SavedPrompt[], text: string, id: string, now = new Date()): SavedPrompt[] {
+  const clean = text.trim();
+  if (!clean) return items;
+  const firstLine = clean.split('\n')[0]!;
+  const title = firstLine.length > 60 ? `${firstLine.slice(0, 57)}…` : firstLine;
+  const rest = items.filter((item) => item.text.trim() !== clean);
+  return [{ id, title, text: clean, savedAt: now.toISOString() }, ...rest].slice(0, LIBRARY_LIMIT);
+}
+
+export async function saveToLibrary(text: string): Promise<void> {
+  await library.setValue(withSaved(await library.getValue(), text, crypto.randomUUID()));
+}
+
 /** Nudges about habits across the conversation, separate from the per-prompt checks. */
 export const conversationCoaching = storage.defineItem<boolean>('local:conversationCoaching', {
   fallback: true,

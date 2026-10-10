@@ -2,7 +2,9 @@ import type { CheckId, Gap } from '@askwell/rules';
 import { useState, type MouseEvent } from 'react';
 import { Mark } from '@/components/Mark';
 import type { ImproveRequest, ImproveResponse } from '@/lib/improve/contract';
+import { saveToLibrary } from '@/lib/settings';
 import { ImproveView, type ImproveState } from './ImproveView';
+import { LibraryView } from './LibraryView';
 
 const LABELS: Record<CheckId, string> = {
   assumedMemory: 'Assumed memory',
@@ -44,13 +46,15 @@ const buttonGhost = 'h-9 cursor-pointer rounded-lg border border-edge px-3.5 tex
 const buttonPrimary = 'h-9 cursor-pointer rounded-lg bg-accent px-3.5 text-[13px] font-medium text-on-accent disabled:opacity-50';
 
 export function Panel({ maxHeight, draft, gaps, onClose, onMute, onApply }: Props) {
-  const [tab, setTab] = useState<'gaps' | 'improve'>('gaps');
+  const [tab, setTab] = useState<'gaps' | 'improve' | 'library'>('gaps');
+  const [savedRewrite, setSavedRewrite] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [improve, setImprove] = useState<ImproveState>({ status: 'idle' });
   const visible = showAll ? gaps : gaps.slice(0, SHOWN);
 
   const runImprove = async () => {
     setTab('improve');
+    setSavedRewrite(false);
     setImprove({ status: 'loading' });
     const request: ImproveRequest = { type: 'improve', prompt: draft, gaps };
     try {
@@ -66,7 +70,7 @@ export function Panel({ maxHeight, draft, gaps, onClose, onMute, onApply }: Prop
     }
   };
 
-  const openTab = (id: 'gaps' | 'improve') => {
+  const openTab = (id: 'gaps' | 'improve' | 'library') => {
     if (id === 'improve' && improve.status === 'idle') void runImprove();
     else setTab(id);
   };
@@ -101,7 +105,7 @@ export function Panel({ maxHeight, draft, gaps, onClose, onMute, onApply }: Prop
       </header>
 
       <div role="tablist" className="flex shrink-0 gap-5 border-b border-edge px-4">
-        {(['gaps', 'improve'] as const).map((id) => (
+        {(['gaps', 'improve', 'library'] as const).map((id) => (
           <button
             key={id}
             type="button"
@@ -112,7 +116,7 @@ export function Panel({ maxHeight, draft, gaps, onClose, onMute, onApply }: Prop
               tab === id ? 'border-accent font-medium text-ink' : 'border-transparent text-subtle'
             }`}
           >
-            {id === 'gaps' ? 'Gaps' : 'Improve'}
+            {id === 'gaps' ? 'Gaps' : id === 'improve' ? 'Improve' : 'Library'}
           </button>
         ))}
       </div>
@@ -152,8 +156,10 @@ export function Panel({ maxHeight, draft, gaps, onClose, onMute, onApply }: Prop
               </button>
             )}
           </div>
-        ) : (
+        ) : tab === 'improve' ? (
           <ImproveView state={improve} draft={draft} onRetry={realClick(() => void runImprove())} />
+        ) : (
+          <LibraryView draft={draft} onInsert={onApply} />
         )}
       </div>
 
@@ -200,6 +206,17 @@ export function Panel({ maxHeight, draft, gaps, onClose, onMute, onApply }: Prop
           )}
           {tab === 'improve' && improve.status === 'done' && (
             <>
+              <button
+                type="button"
+                disabled={savedRewrite}
+                onClick={realClick(() => {
+                  void saveToLibrary(improve.improvement.rewrite);
+                  setSavedRewrite(true);
+                })}
+                className={`${buttonGhost} disabled:cursor-default disabled:opacity-50`}
+              >
+                {savedRewrite ? 'Saved' : 'Save'}
+              </button>
               <button
                 type="button"
                 onClick={() => {

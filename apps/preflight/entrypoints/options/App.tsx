@@ -8,7 +8,9 @@ import {
   clearAll,
   conversationCoaching,
   customRules,
+  library,
   MAX_CUSTOM_RULES,
+  type SavedPrompt,
   disabledChecks,
   disabledSites,
   models,
@@ -387,14 +389,62 @@ function RulesSection() {
   );
 }
 
+function LibrarySection() {
+  const items = useStored(library, [] as SavedPrompt[]);
+  const [copied, setCopied] = useState<string | null>(null);
+  return (
+    <Section number="04" label="LIBRARY">
+      <p className="-mt-1 text-[13px] leading-relaxed text-muted">
+        Prompts you saved from the panel. Insert them from the panel’s Library tab, or copy them from here.
+      </p>
+      {items.length === 0 ? (
+        <p className="rounded-xl border border-dashed border-edge p-4 text-[13px] text-subtle">Nothing saved yet.</p>
+      ) : (
+        <ul className="flex flex-col rounded-xl border border-edge">
+          {items.map((item) => (
+            <li key={item.id} className="flex items-start justify-between gap-4 px-4 py-3.5 [&+&]:border-t [&+&]:border-edge">
+              <div className="flex min-w-0 flex-col gap-1">
+                <span className="text-sm">{item.title}</span>
+                <span className="line-clamp-3 text-[12.5px] leading-snug whitespace-pre-wrap text-subtle">{item.text}</span>
+              </div>
+              <div className="flex shrink-0 gap-1">
+                <button
+                  type="button"
+                  onClick={() =>
+                    void navigator.clipboard.writeText(item.text).then(() => {
+                      setCopied(item.id);
+                      setTimeout(() => setCopied(null), 1500);
+                    })
+                  }
+                  className="h-8 cursor-pointer rounded-lg border border-edge px-3 text-[13px] hover:bg-raised"
+                >
+                  {copied === item.id ? 'Copied' : 'Copy'}
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Delete “${item.title}”`}
+                  onClick={() => void library.setValue(items.filter((i) => i.id !== item.id))}
+                  className="h-8 cursor-pointer rounded-lg px-3 text-[13px] text-subtle hover:bg-raised hover:text-ink"
+                >
+                  Delete
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Section>
+  );
+}
+
 function DangerSection() {
   const [confirming, setConfirming] = useState(false);
   return (
-    <Section number="04" label="DANGER ZONE">
+    <Section number="05" label="DANGER ZONE">
       <div className="flex items-center justify-between gap-6 rounded-xl border border-danger-edge p-4">
         <div className="flex flex-col gap-0.5">
           <span className="text-sm">Clear local data</span>
-          <span className="text-[12.5px] text-subtle">Removes your keys and settings from this browser. This can’t be undone.</span>
+          <span className="text-[12.5px] text-subtle">Removes your keys, settings, rules, library and stats from this browser. This can’t be undone.</span>
         </div>
         <button
           type="button"
@@ -431,6 +481,7 @@ export function App() {
         <ProviderSection />
         <ChecksSection />
         <RulesSection />
+        <LibrarySection />
         <DangerSection />
         <p className="border-t border-edge pt-6 text-[12.5px] leading-relaxed text-subtle">
           Preflight is not affiliated with, endorsed by or sponsored by OpenAI, Anthropic or Google.
