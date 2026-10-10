@@ -7,12 +7,13 @@ import {
   disabledSites,
   models,
   provider,
-  stats,
+  history,
   today,
   type DayStats,
   type Provider,
 } from '@/lib/settings';
 import { siteFor, type Site } from '@/lib/sites';
+import { summarise } from '@/lib/week';
 
 const LABEL: Record<CheckId, string> = {
   assumedMemory: 'ASSUMED MEMORY',
@@ -44,13 +45,27 @@ function useActiveSite(): Site | null | undefined {
 export function App() {
   const site = useActiveSite();
   const sitesOff = useStored(disabledSites, [] as string[]);
-  const day = useStored<DayStats>(stats, { day: '', checked: 0, gaps: 0, byCheck: {} });
+  const days = useStored<DayStats[]>(history, []);
   const chosen = useStored<Provider>(provider, 'anthropic');
   const keys = useStored(apiKeys, {} as Partial<Record<Provider, string>>);
   const picked = useStored(models, {} as Partial<Record<Provider, string>>);
 
-  const current = day.day === today() ? day : { checked: 0, gaps: 0, byCheck: {} as DayStats['byCheck'] };
-  const common = (Object.entries(current.byCheck) as [CheckId, number][]).sort((a, b) => b[1] - a[1])[0]?.[0];
+  const now = today();
+  const current = days.find((d) => d.day === now) ?? { checked: 0, gaps: 0, byCheck: {} as DayStats['byCheck'] };
+  const week = summarise(days, now);
+  const common = week.mostCommon;
+  const tallest = Math.max(1, ...week.days.map((d) => d.checked));
+  const trend =
+    week.rate === null
+      ? 'Nothing sent this week yet.'
+      : `${week.rate.toFixed(1)} gaps per prompt` +
+        (week.previousRate === null
+          ? '.'
+          : week.rate < week.previousRate
+            ? `, down from ${week.previousRate.toFixed(1)} last week.`
+            : week.rate > week.previousRate
+              ? `, up from ${week.previousRate.toFixed(1)} last week.`
+              : ', same as last week.');
   const on = site ? !sitesOff.includes(site.id) : false;
   const providerName = PROVIDERS.find((p) => p.id === chosen)!.name;
 
@@ -102,13 +117,34 @@ export function App() {
           <span className="text-xs text-muted">gaps caught</span>
         </div>
       </div>
-      <div className="mx-[18px] mt-2.5 flex items-center justify-between rounded-[10px] border border-edge px-3.5 py-3">
-        <span className="text-[13px] text-muted">Most common gap</span>
-        {common ? (
-          <span className="rounded-md bg-wash px-2 py-1 font-mono text-[11px] tracking-[0.08em] text-accent">{LABEL[common]}</span>
-        ) : (
-          <span className="font-mono text-xs text-subtle">none yet</span>
-        )}
+      <h2 className="px-[18px] pt-[22px] pb-2 font-mono text-[11px] font-normal tracking-[0.08em] text-subtle">THIS WEEK</h2>
+      <div className="mx-[18px] flex flex-col gap-3 rounded-[10px] border border-edge p-3.5">
+        <div className="flex h-12 items-end gap-1.5" role="img" aria-label={`Prompts checked each day this week: ${week.days.map((d) => d.checked).join(', ')}`}>
+          {week.days.map((d) => (
+            <div key={d.day} className="flex flex-1 flex-col justify-end overflow-hidden rounded-[3px] bg-raised" style={{ height: '100%' }}>
+              <div
+                className="w-full rounded-[3px] bg-accent/70"
+                style={{ height: d.checked ? `${Math.max(8, (d.checked / tallest) * 100)}%` : 0 }}
+              />
+            </div>
+          ))}
+        </div>
+        <p className="text-[13px] leading-snug text-muted">
+          {week.checked > 0 && (
+            <span className="text-ink">
+              {week.checked} {week.checked === 1 ? 'prompt' : 'prompts'}, {week.gaps} {week.gaps === 1 ? 'gap' : 'gaps'}.{' '}
+            </span>
+          )}
+          {trend}
+        </p>
+        <div className="flex items-center justify-between border-t border-edge pt-3">
+          <span className="text-[13px] text-muted">Most common gap</span>
+          {common ? (
+            <span className="rounded-md bg-wash px-2 py-1 font-mono text-[11px] tracking-[0.08em] text-accent">{LABEL[common]}</span>
+          ) : (
+            <span className="font-mono text-xs text-subtle">none yet</span>
+          )}
+        </div>
       </div>
 
       <h2 className="px-[18px] pt-[22px] pb-2 font-mono text-[11px] font-normal tracking-[0.08em] text-subtle">IMPROVE</h2>

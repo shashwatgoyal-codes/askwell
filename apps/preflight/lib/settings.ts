@@ -29,22 +29,31 @@ export interface DayStats {
   byCheck: Partial<Record<CheckId, number>>;
 }
 
-/** Today's counts for the popup. Counts only: never the prompts themselves. */
-export const stats = storage.defineItem<DayStats>('local:stats', {
-  fallback: { day: '', checked: 0, gaps: 0, byCheck: {} },
+/** The last four weeks of daily counts, oldest first. Counts only: never the prompts themselves. */
+export const history = storage.defineItem<DayStats[]>('local:history', {
+  fallback: [],
 });
 
-export function today(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+/** How many days of counts are kept. */
+const KEEP_DAYS = 28;
+
+export function today(now = new Date()): string {
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+/** Pure, for tests: the history after one more sent prompt with these gaps. */
+export function addSent(days: DayStats[], gapIds: CheckId[], day = today()): DayStats[] {
+  const last = days[days.length - 1];
+  const base: DayStats = last?.day === day ? last : { day, checked: 0, gaps: 0, byCheck: {} };
+  const byCheck = { ...base.byCheck };
+  for (const id of gapIds) byCheck[id] = (byCheck[id] ?? 0) + 1;
+  const next = { day, checked: base.checked + 1, gaps: base.gaps + gapIds.length, byCheck };
+  const kept = last?.day === day ? days.slice(0, -1) : days;
+  return [...kept, next].slice(-KEEP_DAYS);
 }
 
 export async function recordSent(gapIds: CheckId[]): Promise<void> {
-  const current = await stats.getValue();
-  const base = current.day === today() ? current : { day: today(), checked: 0, gaps: 0, byCheck: {} };
-  const byCheck = { ...base.byCheck };
-  for (const id of gapIds) byCheck[id] = (byCheck[id] ?? 0) + 1;
-  await stats.setValue({ day: base.day, checked: base.checked + 1, gaps: base.gaps + gapIds.length, byCheck });
+  await history.setValue(addSent(await history.getValue(), gapIds));
 }
 
 export type Provider = 'anthropic' | 'openai' | 'gemini';
