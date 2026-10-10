@@ -3,7 +3,9 @@ import { useEffect, useState } from 'react';
 import { Mark } from '@/components/Mark';
 import {
   PROVIDERS,
+  adminToken,
   apiKeys,
+  type AdminToken,
   disabledSites,
   models,
   provider,
@@ -50,6 +52,7 @@ export function App() {
   const chosen = useStored<Provider>(provider, 'anthropic');
   const keys = useStored(apiKeys, {} as Partial<Record<Provider, string>>);
   const picked = useStored(models, {} as Partial<Record<Provider, string>>);
+  const admin = useStored<AdminToken | null>(adminToken, null);
 
   const now = today();
   const current = days.find((d) => d.day === now) ?? { checked: 0, gaps: 0, byCheck: {} as DayStats['byCheck'] };
@@ -150,14 +153,23 @@ export function App() {
 
       <h2 className="px-[18px] pt-[22px] pb-2 font-mono text-[11px] font-normal tracking-[0.08em] text-subtle">IMPROVE</h2>
       <div className="mx-[18px] flex flex-col rounded-[10px] border border-edge">
-        <div className="flex items-center justify-between px-3.5 py-3">
-          <span className="text-[13px]">{providerName} key</span>
-          <span className="font-mono text-xs text-muted">{keys[chosen] ? '✓ saved' : 'not set'}</span>
-        </div>
-        <div className="flex items-center justify-between border-t border-edge px-3.5 py-3">
-          <span className="text-[13px]">Model</span>
-          <span className="font-mono text-xs text-muted">{picked[chosen] ?? '—'}</span>
-        </div>
+        {admin ? (
+          <div className="flex items-center justify-between px-3.5 py-3">
+            <span className="text-[13px]">Admin token</span>
+            <span className="font-mono text-xs text-muted">✓ {admin.label}</span>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between px-3.5 py-3">
+              <span className="text-[13px]">{providerName} key</span>
+              <span className="font-mono text-xs text-muted">{keys[chosen] ? '✓ saved' : 'not set'}</span>
+            </div>
+            <div className="flex items-center justify-between border-t border-edge px-3.5 py-3">
+              <span className="text-[13px]">Model</span>
+              <span className="font-mono text-xs text-muted">{picked[chosen] ?? '—'}</span>
+            </div>
+          </>
+        )}
       </div>
 
       <footer className="mt-5 flex flex-col gap-2.5 border-t border-edge px-[18px] pt-4 pb-[18px]">

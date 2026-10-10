@@ -107,6 +107,29 @@ export const apiKeys = storage.defineItem<Partial<Record<Provider, string>>>('lo
   fallback: {},
 });
 
+export interface AdminToken {
+  /** The portal's address, e.g. https://askwell-portal.vercel.app */
+  portal: string;
+  token: string;
+  /** Who the token was issued to, as the portal reports it. */
+  label: string;
+}
+
+/** A token from someone's portal. While set, Improve runs on their key through the portal instead of the person's own. */
+export const adminToken = storage.defineItem<AdminToken | null>('local:adminToken', { fallback: null });
+
+/** A portal address Preflight will talk to: https, or http on this machine for development. */
+export function normalisePortal(input: string): string | null {
+  try {
+    const url = new URL(input.trim());
+    const local = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+    if (url.protocol !== 'https:' && !(local && url.protocol === 'http:')) return null;
+    return url.origin;
+  } catch {
+    return null;
+  }
+}
+
 /** The chosen model per provider. Only Anthropic has a default; the others are picked from the key's own model list. */
 export const models = storage.defineItem<Partial<Record<Provider, string>>>('local:models', {
   fallback: { anthropic: 'claude-opus-5-5' },

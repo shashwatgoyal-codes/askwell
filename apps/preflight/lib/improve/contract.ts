@@ -18,3 +18,8 @@ export type ModelsResponse = { ok: true; models: string[] } | { ok: false; error
 export type ProbeRequest = { type: 'probe-model'; provider: Provider; key: string; model: string };
 export type ProbeResponse = { ok: true } | { ok: false; error: string; detail?: string };
 
+
+export type TokenCheckRequest = { type: 'check-token'; portal: string; token: string };
+export type TokenCheckResponse =
+  | { ok: true; label: string; dailyLimit: number; usedToday: number; expiresAt: string | null }
+  | { ok: false; error: string };

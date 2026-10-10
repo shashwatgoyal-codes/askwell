@@ -228,8 +228,61 @@ test('the chat page’s own scripts cannot press Improve or Apply', async ({ con
 
   // A real click still works.
   await page.getByRole('button', { name: 'Improve with AI' }).click();
-  await expect(page.getByRole('button', { name: 'Apply to chat' })).toBeVisible();
+  // Apply shows, disabled, while the rewrite loads; enabled means it arrived.
+  await expect(page.getByRole('button', { name: 'Apply to chat' })).toBeEnabled();
   expect(calls).toBe(afterSetup + 1);
   expect(await fakeClick('Apply to chat')).toBe(true);
   await expect(page.locator('#prompt-textarea')).toHaveText('fix the login bug, same as before');
+});
+
+test('an admin token routes Improve through the portal instead of the person’s own key', async ({ context, extensionId, site }) => {
+  const portalCalls: { path: string; auth: string | undefined }[] = [];
+  let anthropicCalls = 0;
+  await context.route('https://api.anthropic.com/**', (route) => {
+    anthropicCalls++;
+    return route.abort();
+  });
+  await context.route('https://portal.test/**', (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+    portalCalls.push({ path, auth: request.headers()['authorization'] });
+    const body =
+      path === '/api/token'
+        ? { ok: true, label: 'Rahul', dailyLimit: 20, usedToday: 3, expiresAt: null }
+        : { ok: true, model: 'claude-opus-5-5', improvement: { rewrite: REWRITE, changes: [] } };
+    return route.fulfill({ contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
+  });
+
+  const settings = await context.newPage();
+  await settings.goto(`chrome-extension://${extensionId}/options.html`);
+  await settings.getByLabel('Portal address').fill('https://portal.test/some/path');
+  await settings.getByLabel('Token', { exact: true }).fill('pfa_test_token');
+  await settings.getByRole('button', { name: 'Check and use' }).click();
+  await expect(settings.getByText('Using a token for Rahul')).toBeVisible();
+  await expect(settings.getByText('✓ Active for Rahul · 17 of 20 rewrites left today')).toBeVisible();
+  await expect(settings.getByText('https://portal.test', { exact: true })).toBeVisible();
+
+  const page = await site('https://chatgpt.com/');
+  await page.locator('#prompt-textarea').click();
+  await page.keyboard.type('fix the login bug, same as before');
+  await page.getByRole('button', { name: /^Preflight: \d gaps/ }).click();
+  await page.getByRole('button', { name: 'Improve with AI' }).click();
+  await expect(page.getByRole('button', { name: 'Apply to chat' })).toBeEnabled();
+
+  expect(portalCalls.map((c) => c.path)).toEqual(['/api/token', '/api/improve']);
+  expect(portalCalls.every((c) => c.auth === 'Bearer pfa_test_token')).toBe(true);
+  expect(anthropicCalls).toBe(0);
+
+  await settings.bringToFront();
+  await settings.getByRole('button', { name: 'Remove token' }).click();
+  await expect(settings.getByLabel('Portal address')).toBeVisible();
+});
+
+test('a portal address that isn’t https is refused before anything is sent', async ({ context, extensionId }) => {
+  const settings = await context.newPage();
+  await settings.goto(`chrome-extension://${extensionId}/options.html`);
+  await settings.getByLabel('Portal address').fill('http://portal.test');
+  await settings.getByLabel('Token', { exact: true }).fill('pfa_x');
+  await settings.getByRole('button', { name: 'Check and use' }).click();
+  await expect(settings.getByText('Use the portal’s https:// address.')).toBeVisible();
 });

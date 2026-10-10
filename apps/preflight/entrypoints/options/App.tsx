@@ -1,10 +1,13 @@
 import type { CheckId, CustomRule, Sensitivity } from '@askwell/rules';
 import { useEffect, useId, useState, type ReactNode } from 'react';
 import { Mark } from '@/components/Mark';
-import type { ModelsRequest, ModelsResponse, ProbeRequest, ProbeResponse } from '@/lib/improve/contract';
+import type { ModelsRequest, ModelsResponse, ProbeRequest, ProbeResponse, TokenCheckRequest, TokenCheckResponse } from '@/lib/improve/contract';
 import {
   PROVIDERS,
+  adminToken,
   apiKeys,
+  normalisePortal,
+  type AdminToken,
   clearAll,
   conversationCoaching,
   customRules,
@@ -166,7 +169,7 @@ function ProviderSection() {
   return (
     <Section number="01" label="AI PROVIDER">
       <p className="-mt-1 text-[13px] leading-relaxed text-muted">
-        Only Improve uses a key. The checks never do.
+        Only Improve uses a key. The checks never do. An admin token below, when set, is used instead.
       </p>
       <Segmented label="Provider" value={chosen} options={PROVIDERS} onChange={(id) => void providerItem.setValue(id)} />
       <div className="flex flex-col gap-2">
@@ -242,6 +245,90 @@ function ProviderSection() {
   );
 }
 
+function TokenSection() {
+  const saved = useStored(adminToken, null as AdminToken | null);
+  const [portal, setPortal] = useState('');
+  const [token, setToken] = useState('');
+  const [status, setStatus] = useState<{ kind: 'idle' | 'checking' | 'ok' | 'error'; text?: string }>({ kind: 'idle' });
+  const ids = { portal: useId(), token: useId() };
+
+  useEffect(() => {
+    if (saved) setPortal(saved.portal);
+  }, [saved]);
+
+  const check = async () => {
+    const origin = normalisePortal(portal);
+    if (!origin) return setStatus({ kind: 'error', text: 'Use the portal’s https:// address.' });
+    if (!token.trim()) return setStatus({ kind: 'error', text: 'Paste the token you were given.' });
+    setStatus({ kind: 'checking' });
+    const request: TokenCheckRequest = { type: 'check-token', portal: origin, token: token.trim() };
+    const result = (await browser.runtime.sendMessage(request)) as TokenCheckResponse;
+    if (!result.ok) return setStatus({ kind: 'error', text: result.error });
+    await adminToken.setValue({ portal: origin, token: token.trim(), label: result.label });
+    setToken('');
+    setStatus({ kind: 'ok', text: `Active for ${result.label} · ${result.dailyLimit - result.usedToday} of ${result.dailyLimit} rewrites left today` });
+  };
+
+  return (
+    <Section number="02" label="ADMIN TOKEN">
+      <p className="-mt-1 text-[13px] leading-relaxed text-muted">
+        If someone gave you a token for their Askwell portal, Improve runs on their key instead of yours, up to the
+        daily limit they set.
+      </p>
+      {saved ? (
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-edge px-4 py-3.5">
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <span className="text-sm">Using a token for {saved.label}</span>
+            <span className="truncate font-mono text-[12px] text-subtle">{saved.portal}</span>
+            {status.kind === 'ok' && <span className="font-mono text-xs text-ink">✓ {status.text}</span>}
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              void adminToken.setValue(null);
+              setStatus({ kind: 'idle' });
+            }}
+            className="h-8 shrink-0 cursor-pointer rounded-lg border border-edge px-3 text-[13px] hover:bg-raised"
+          >
+            Remove token
+          </button>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor={ids.portal} className="text-[13px] text-label">
+              Portal address
+            </label>
+            <input id={ids.portal} type="url" value={portal} placeholder="https://…" onChange={(e) => setPortal(e.target.value)} className={input} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor={ids.token} className="text-[13px] text-label">
+              Token
+            </label>
+            <div className="flex gap-2">
+              <input
+                id={ids.token}
+                type="password"
+                autoComplete="off"
+                spellCheck={false}
+                value={token}
+                placeholder="pfa_…"
+                onChange={(e) => setToken(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && void check()}
+                className={input}
+              />
+              <button type="button" onClick={() => void check()} disabled={status.kind === 'checking'} className={ghost}>
+                {status.kind === 'checking' ? 'Checking…' : 'Check and use'}
+              </button>
+            </div>
+          </div>
+          {status.kind === 'error' && <span className="text-xs text-danger">{status.text}</span>}
+        </div>
+      )}
+    </Section>
+  );
+}
+
 function ChecksSection() {
   const level = useStored(sensitivityItem, 'balanced' as Sensitivity);
   const off = useStored(disabledChecks, [] as CheckId[]);
@@ -251,7 +338,7 @@ function ChecksSection() {
   const flip = <T,>(list: T[], item: T, on: boolean) => (on ? list.filter((x) => x !== item) : [...list, item]);
 
   return (
-    <Section number="02" label="CHECKS">
+    <Section number="03" label="CHECKS">
       <div className="flex items-center justify-between">
         <span className="text-[13px] text-label">Sensitivity</span>
         <Segmented
@@ -343,7 +430,7 @@ function RulesSection() {
   );
 
   return (
-    <Section number="03" label="YOUR RULES">
+    <Section number="04" label="YOUR RULES">
       <p className="-mt-1 text-[13px] leading-relaxed text-muted">
         Checks of your own, in plain words: when a prompt mentions something, it should also mention something
         else. Separate several words with commas.
@@ -393,7 +480,7 @@ function LibrarySection() {
   const items = useStored(library, [] as SavedPrompt[]);
   const [copied, setCopied] = useState<string | null>(null);
   return (
-    <Section number="04" label="LIBRARY">
+    <Section number="05" label="LIBRARY">
       <p className="-mt-1 text-[13px] leading-relaxed text-muted">
         Prompts you saved from the panel. Insert them from the panel’s Library tab, or copy them from here.
       </p>
@@ -440,7 +527,7 @@ function LibrarySection() {
 function DangerSection() {
   const [confirming, setConfirming] = useState(false);
   return (
-    <Section number="05" label="DANGER ZONE">
+    <Section number="06" label="DANGER ZONE">
       <div className="flex items-center justify-between gap-6 rounded-xl border border-danger-edge p-4">
         <div className="flex flex-col gap-0.5">
           <span className="text-sm">Clear local data</span>
@@ -479,6 +566,7 @@ export function App() {
           Settings. <span className="text-faint">All of it stays in this browser.</span>
         </h1>
         <ProviderSection />
+        <TokenSection />
         <ChecksSection />
         <RulesSection />
         <LibrarySection />
