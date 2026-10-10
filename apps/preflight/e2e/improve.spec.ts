@@ -147,3 +147,47 @@ test('Gemini: only text models are offered, stable Flash first, and a 404 says w
   await expect(panel.getByText('models/gemini-9.0-flash is not found for API version v1beta')).toBeVisible();
   await expect(panel.getByRole('button', { name: 'Open settings' })).toBeVisible();
 });
+
+test('Gemini: an overloaded model is retried before giving up, and a lasting overload is explained', async ({ context, extensionId, site }) => {
+  let generateCalls = 0;
+  let failuresLeft = 2;
+  await context.route('https://generativelanguage.googleapis.com/**', (route) => {
+    if (route.request().method() === 'GET') {
+      return route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({ models: [{ name: 'models/gemini-9.0-flash', supportedGenerationMethods: ['generateContent'] }] }),
+      });
+    }
+    generateCalls++;
+    if (failuresLeft > 0) {
+      failuresLeft--;
+      return route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: { code: 503, message: 'The model is overloaded. Please try again later.', status: 'UNAVAILABLE' } }),
+      });
+    }
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ candidates: [{ content: { parts: [{ text: 'OK' }], role: 'model' } }] }) });
+  });
+
+  const settings = await context.newPage();
+  await settings.goto(`chrome-extension://${extensionId}/options.html`);
+  await settings.getByRole('radio', { name: 'Gemini' }).click();
+  await settings.getByLabel('Gemini API key').fill('AIza-test-not-real');
+  await settings.getByRole('button', { name: 'Test and save' }).click();
+  // Two overloads, then an answer: the retries absorb them.
+  await expect(settings.getByText('✓ gemini-9.0-flash answers this key')).toBeVisible({ timeout: 15_000 });
+  expect(generateCalls).toBe(3);
+
+  // A lasting overload: three 503s in a row reach the user, explained.
+  failuresLeft = 3;
+  const page = await site('https://gemini.google.com/app');
+  await page.locator('rich-textarea .ql-editor').click();
+  await page.keyboard.type('fix the login bug, same as before');
+  await page.getByRole('button', { name: /^Preflight: \d gaps/ }).click();
+  await page.getByRole('button', { name: 'Improve with AI' }).click();
+  const panel = page.getByRole('region', { name: 'Preflight' });
+  await expect(panel.getByText('Gemini is overloaded right now (Google’s side, not your key).', { exact: false })).toBeVisible({ timeout: 15_000 });
+  await expect(panel.getByText('The model is overloaded. Please try again later.')).toBeVisible();
+  await expect(panel.getByRole('button', { name: 'Try again' })).toBeVisible();
+});

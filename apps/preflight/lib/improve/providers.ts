@@ -49,7 +49,12 @@ function asImproveError(provider: Provider, model: string, error: unknown): Impr
   }
   if (provider === 'gemini' && error instanceof GeminiError) {
     if (error.status === 404) return new ImproveError(`Gemini won’t serve ${model} to this key. Pick another model in settings.`, true, detail);
-    if (error.status === 429) return new ImproveError('Gemini is rate limiting this key. Try again shortly.', false, detail);
+    if (error.status === 429) {
+      return new ImproveError('Gemini’s free-tier limit was reached for now. Wait a minute and try again.', false, detail);
+    }
+    if (error.status === 503) {
+      return new ImproveError(`Gemini is overloaded right now (Google’s side, not your key). Try again shortly, or pick a Flash-Lite model.`, false, detail);
+    }
     if ([400, 401, 403].includes(error.status)) return new ImproveError('Gemini refused this request.', true, detail);
     return new ImproveError(`Gemini returned an error (${error.status}).`, false, detail);
   }
@@ -102,10 +107,28 @@ async function viaOpenAI(key: string, model: string, prompt: string, gaps: Gap[]
   }
 }
 
+// Overload (503) and server errors (500, 504) on Gemini usually clear within
+// seconds, and are common on the free tier. Retry those before giving up;
+// never retry a 4xx, which will not change by waiting.
+const GEMINI_RETRY_DELAYS_MS = [1000, 3000];
+
+async function withGeminiRetry<T>(call: () => Promise<T>): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await call();
+    } catch (error) {
+      const transient = error instanceof GeminiError && [500, 503, 504].includes(error.status);
+      const wait = GEMINI_RETRY_DELAYS_MS[attempt];
+      if (!transient || wait === undefined) throw error;
+      await new Promise((resolve) => setTimeout(resolve, wait));
+    }
+  }
+}
+
 async function viaGemini(key: string, model: string, prompt: string, gaps: Gap[]): Promise<string> {
   const ai = new GoogleGenAI({ apiKey: key });
   try {
-    const response = await ai.models.generateContent({
+    const response = await withGeminiRetry(() => ai.models.generateContent({
       model,
       contents: userMessage(prompt, gaps),
       config: {
@@ -113,7 +136,7 @@ async function viaGemini(key: string, model: string, prompt: string, gaps: Gap[]
         responseMimeType: 'application/json',
         responseJsonSchema: IMPROVEMENT_SCHEMA,
       },
-    });
+    }));
     return response.text ?? '';
   } catch (error) {
     throw asImproveError('gemini', model, error);
@@ -153,7 +176,8 @@ export async function probeModel(provider: Provider, key: string, model: string)
       const client = new OpenAI({ apiKey: key, dangerouslyAllowBrowser: true, maxRetries: 0 });
       await client.responses.create({ model, input: ask });
     } else {
-      await new GoogleGenAI({ apiKey: key }).models.generateContent({ model, contents: ask });
+      const ai = new GoogleGenAI({ apiKey: key });
+      await withGeminiRetry(() => ai.models.generateContent({ model, contents: ask }));
     }
   } catch (error) {
     throw asImproveError(provider, model, error);
