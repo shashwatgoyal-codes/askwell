@@ -126,10 +126,10 @@ export function Coach({ site }: { site: Site }) {
 
   const chat = location.pathname;
   const nudge = useMemo(() => {
-    if (!coaching) return null;
+    if (!coaching || site.userMessages.length === 0) return null;
     const found = checkSession({ previous, draft: text });
     return found && !dismissed.has(`${chat}:${found.id}`) ? found : null;
-  }, [coaching, previous, text, dismissed, chat]);
+  }, [coaching, site, previous, text, dismissed, chat]);
 
   if (siteOff || !anchor || (words < 3 && !nudge)) return null;
 

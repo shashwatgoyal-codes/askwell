@@ -86,7 +86,7 @@ export function App() {
           </>
         ) : (
           <span className="text-[13px] text-muted">
-            {site === undefined ? '…' : 'Open ChatGPT, Claude or Gemini to get coaching.'}
+            {site === undefined ? '…' : 'Open a supported AI chat, like ChatGPT, Claude or Gemini, to get coaching.'}
           </span>
         )}
       </div>

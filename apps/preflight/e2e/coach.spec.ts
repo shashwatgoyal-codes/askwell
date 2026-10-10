@@ -85,3 +85,26 @@ test('a redesigned prompt box no selector knows is still found once you type in 
   await badge.click();
   await expect(page.getByRole('region', { name: 'Preflight' })).toBeVisible();
 });
+
+test.describe('the newer sites', () => {
+  for (const [url, box] of [
+    ['https://www.perplexity.ai/', '#ask-input'],
+    ['https://grok.com/', 'div.tiptap'],
+    ['https://chat.mistral.ai/chat', 'div.ProseMirror'],
+  ] as const) {
+    test(`flags a weak prompt on ${new URL(url).hostname}`, async ({ site }) => {
+      const page = await site(url);
+      await page.locator(box).click();
+      await page.keyboard.type('fix the login bug, same as before');
+      await expect(page.getByRole('button', { name: 'Preflight: 3 gaps in this prompt' })).toBeVisible();
+    });
+  }
+
+  test('no conversation nudges where the history can’t be read', async ({ site }) => {
+    const page = await site('https://www.perplexity.ai/');
+    await page.locator('#ask-input').click();
+    await page.keyboard.type('continue where we left off on the auth refactor');
+    await expect(page.getByRole('button', { name: /^Preflight/ })).toBeVisible();
+    await expect(page.getByText('Starting fresh?')).toHaveCount(0);
+  });
+});

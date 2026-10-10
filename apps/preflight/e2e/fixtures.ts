@@ -21,7 +21,19 @@ const chatgpt = (messages: string[] = []) => `<!doctype html><html><body style="
       </form>
     </main></body></html>`;
 
+const editorPage = (bg: string, fg: string, editor: string) => `<!doctype html><html><body style="margin:0;background:${bg};color:${fg};font:15px/1.5 system-ui,sans-serif">
+    <main style="height:100vh;display:flex;flex-direction:column;justify-content:flex-end;padding:0 15%">
+      <div style="margin-bottom:32px;border:1px solid #8884;border-radius:24px;padding:16px">${editor}</div>
+    </main></body></html>`;
+
 const PAGES: Record<string, string> = {
+  'https://www.perplexity.ai/': editorPage('#191a1a', '#e8e8e6', '<div id="ask-input" contenteditable="true" style="min-height:24px;outline:none"></div>'),
+  'https://grok.com/': editorPage(
+    '#ffffff',
+    '#111',
+    '<textarea style="position:absolute;opacity:0;height:14px;width:300px"></textarea><div class="tiptap ProseMirror" contenteditable="true" style="min-height:24px;outline:none"></div>',
+  ),
+  'https://chat.mistral.ai/chat': editorPage('#ffffff', '#111', '<div class="ProseMirror" contenteditable="true" style="min-height:24px;outline:none"></div>'),
   'https://chatgpt.com/c/errors': chatgpt([
     "TypeError: Cannot read properties of undefined (reading 'id') at getUser (auth.ts:42)",
     'now this: PrismaClientKnownRequestError P2025 at updateSession',

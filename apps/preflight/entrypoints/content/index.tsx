@@ -1,11 +1,11 @@
 import '@/assets/theme.css';
 import { createRoot, type Root } from 'react-dom/client';
 import { createShadowRootUi } from '#imports';
-import { siteFor } from '@/lib/sites';
+import { MATCHES, siteFor } from '@/lib/sites';
 import { Coach } from '@/components/coach/Coach';
 
 export default defineContentScript({
-  matches: ['https://chatgpt.com/*', 'https://claude.ai/*', 'https://gemini.google.com/*'],
+  matches: MATCHES,
   cssInjectionMode: 'ui',
   async main(ctx) {
     const site = siteFor(location.hostname);

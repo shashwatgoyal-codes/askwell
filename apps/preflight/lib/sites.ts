@@ -3,11 +3,15 @@
 // wins. When a site changes, this file is the only one that should need to.
 
 export interface Site {
-  id: 'chatgpt' | 'claude' | 'gemini';
+  id: 'chatgpt' | 'claude' | 'gemini' | 'perplexity' | 'copilot' | 'grok' | 'deepseek' | 'lechat';
   name: string;
   hosts: string[];
   selectors: string[];
-  /** The person's own earlier messages in the open chat. */
+  /**
+   * The person's own earlier messages in the open chat. Empty where they are
+   * not known yet; conversation nudges are then off for that site, since a
+   * history that can't be read would look like a brand-new chat.
+   */
   userMessages: string[];
 }
 
@@ -35,7 +39,47 @@ export const SITES: Site[] = [
     selectors: ['rich-textarea .ql-editor[contenteditable="true"]', 'rich-textarea [contenteditable="true"]:not(.ql-clipboard)'],
     userMessages: ['user-query .query-text', 'user-query'],
   },
+  {
+    id: 'perplexity',
+    name: 'Perplexity',
+    hosts: ['www.perplexity.ai', 'perplexity.ai'],
+    selectors: ['#ask-input[contenteditable="true"]', '#ask-input', 'textarea'],
+    userMessages: [],
+  },
+  {
+    id: 'copilot',
+    name: 'Copilot',
+    hosts: ['copilot.microsoft.com', 'copilot.com'],
+    // Signed out, Copilot shows only a sign-in page; the box being typed in is the fallback.
+    selectors: ['textarea#userInput', 'textarea[data-testid="composer-input"]'],
+    userMessages: [],
+  },
+  {
+    id: 'grok',
+    name: 'Grok',
+    hosts: ['grok.com'],
+    // A tiptap editor sits over a small hidden textarea; prefer the editor.
+    selectors: ['div.tiptap.ProseMirror[contenteditable="true"]', 'div.ProseMirror[contenteditable="true"]'],
+    userMessages: [],
+  },
+  {
+    id: 'deepseek',
+    name: 'DeepSeek',
+    hosts: ['chat.deepseek.com'],
+    selectors: ['textarea#chat-input', 'textarea'],
+    userMessages: [],
+  },
+  {
+    id: 'lechat',
+    name: 'Le Chat',
+    hosts: ['chat.mistral.ai'],
+    selectors: ['div.ProseMirror[contenteditable="true"]'],
+    userMessages: [],
+  },
 ];
+
+/** Every match pattern the content script needs, built from the hosts above. */
+export const MATCHES = SITES.flatMap((site) => site.hosts.map((host) => `https://${host}/*`));
 
 export function siteFor(hostname: string): Site | undefined {
   return SITES.find((site) => site.hosts.some((host) => hostname === host || hostname.endsWith(`.${host}`)));
