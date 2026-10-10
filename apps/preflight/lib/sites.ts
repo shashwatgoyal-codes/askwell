@@ -54,3 +54,28 @@ export function findComposer(site: Site): HTMLElement | null {
 export function readText(el: HTMLElement): string {
   return el instanceof HTMLTextAreaElement ? el.value : el.innerText;
 }
+
+/**
+ * Put text in the prompt box the way typing would, so the site's editor
+ * (React, ProseMirror, Quill) sees the change. Never submits.
+ */
+export function writeText(el: HTMLElement, text: string): void {
+  el.focus();
+  if (el instanceof HTMLTextAreaElement) {
+    const setValue = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
+    setValue?.call(el, text);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    return;
+  }
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  const selection = getSelection();
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+  // execCommand is deprecated but it is still the one input path rich
+  // editors listen to; writing innerHTML would bypass their state.
+  if (!document.execCommand('insertText', false, text)) {
+    el.textContent = text;
+    el.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: text }));
+  }
+}

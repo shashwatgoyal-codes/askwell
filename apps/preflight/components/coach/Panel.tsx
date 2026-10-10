@@ -1,6 +1,8 @@
 import type { CheckId, Gap } from '@askwell/rules';
 import { useState } from 'react';
 import { Mark } from '@/components/Mark';
+import type { ImproveRequest, ImproveResponse } from '@/lib/improve/contract';
+import { ImproveView, type ImproveState } from './ImproveView';
 
 const LABELS: Record<CheckId, string> = {
   assumedMemory: 'Assumed memory',
@@ -14,21 +16,49 @@ const LABELS: Record<CheckId, string> = {
 const SHOWN = 2;
 
 interface Props {
+  draft: string;
   gaps: Gap[];
   onClose: () => void;
   onMute: (id: CheckId) => void;
+  onApply: (text: string) => void;
 }
 
-export function Panel({ gaps, onClose, onMute }: Props) {
+const buttonGhost = 'h-9 cursor-pointer rounded-lg border border-edge px-3.5 text-[13px] text-muted hover:bg-raised';
+const buttonPrimary = 'h-9 cursor-pointer rounded-lg bg-accent px-3.5 text-[13px] font-medium text-on-accent disabled:opacity-50';
+
+export function Panel({ draft, gaps, onClose, onMute, onApply }: Props) {
   const [tab, setTab] = useState<'gaps' | 'improve'>('gaps');
   const [showAll, setShowAll] = useState(false);
+  const [improve, setImprove] = useState<ImproveState>({ status: 'idle' });
   const visible = showAll ? gaps : gaps.slice(0, SHOWN);
+
+  const runImprove = async () => {
+    setTab('improve');
+    setImprove({ status: 'loading' });
+    const request: ImproveRequest = { type: 'improve', prompt: draft, gaps };
+    try {
+      const response = (await browser.runtime.sendMessage(request)) as ImproveResponse;
+      setImprove(
+        response.ok
+          ? { status: 'done', improvement: response.improvement, model: response.model, draft }
+          : { status: 'error', error: response.error, needsKey: Boolean(response.needsKey) },
+      );
+    } catch {
+      // The extension was reloaded under this page; its old scripts can't reach the new worker.
+      setImprove({ status: 'error', error: 'Preflight was updated. Reload this page to use Improve.', needsKey: false });
+    }
+  };
+
+  const openTab = (id: 'gaps' | 'improve') => {
+    if (id === 'improve' && improve.status === 'idle') void runImprove();
+    else setTab(id);
+  };
 
   return (
     <section
       aria-label="Preflight"
       onKeyDown={(event) => event.key === 'Escape' && onClose()}
-      className="w-[420px] overflow-hidden rounded-[14px] border border-edge bg-surface shadow-[0_24px_60px_rgba(0,0,0,0.35)]"
+      className="w-[440px] overflow-hidden rounded-[14px] border border-edge bg-surface shadow-[0_24px_60px_rgba(0,0,0,0.35)]"
     >
       <header className="flex items-center justify-between py-3 pr-3 pl-4">
         <div className="flex items-center gap-2.5">
@@ -59,7 +89,7 @@ export function Panel({ gaps, onClose, onMute }: Props) {
             type="button"
             role="tab"
             aria-selected={tab === id}
-            onClick={() => setTab(id)}
+            onClick={() => openTab(id)}
             className={`h-9 cursor-pointer border-b-2 text-[13px] ${
               tab === id ? 'border-accent font-medium text-ink' : 'border-transparent text-subtle'
             }`}
@@ -103,45 +133,70 @@ export function Panel({ gaps, onClose, onMute }: Props) {
           )}
         </div>
       ) : (
-        <div className="flex flex-col gap-3 p-4">
-          <p className="text-sm leading-normal">
-            Improve rewrites this prompt with your own API key and shows every change, with the reason for it.
-          </p>
-          <p className="text-[13px] leading-normal text-muted">No key is set up yet.</p>
-        </div>
+        <ImproveView state={improve} draft={draft} onRetry={() => void runImprove()} />
       )}
 
       <footer className="flex items-center justify-between border-t border-edge bg-canvas/40 px-4 py-3">
         <span className="flex items-center gap-1.5 font-mono text-[11px] text-subtle">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <rect x="5" y="11" width="14" height="10" rx="2" />
-            <path d="M8 11V7a4 4 0 0 1 8 0v4" />
-          </svg>
-          Checked locally
+          {tab === 'improve' && improve.status === 'done' ? (
+            `${improve.model} · your key`
+          ) : (
+            <>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="5" y="11" width="14" height="10" rx="2" />
+                <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+              </svg>
+              Checked locally
+            </>
+          )}
         </span>
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="h-9 cursor-pointer rounded-lg border border-edge px-3.5 text-[13px] text-muted hover:bg-raised"
-          >
-            Dismiss
-          </button>
-          {tab === 'gaps' ? (
-            <button
-              type="button"
-              onClick={() => setTab('improve')}
-              className="h-9 cursor-pointer rounded-lg bg-accent px-3.5 text-[13px] font-medium text-on-accent"
-            >
-              Improve with AI
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => void browser.runtime.sendMessage({ type: 'open-settings' })}
-              className="h-9 cursor-pointer rounded-lg bg-accent px-3.5 text-[13px] font-medium text-on-accent"
-            >
-              Add a key in settings
+          {tab === 'gaps' && (
+            <>
+              <button type="button" onClick={onClose} className={buttonGhost}>
+                Dismiss
+              </button>
+              <button type="button" onClick={() => void runImprove()} className={buttonPrimary}>
+                Improve with AI
+              </button>
+            </>
+          )}
+          {tab === 'improve' && improve.status === 'error' && (
+            <>
+              {!improve.needsKey && (
+                <button type="button" onClick={() => void runImprove()} className={buttonGhost}>
+                  Try again
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => void browser.runtime.sendMessage({ type: 'open-settings' })}
+                className={improve.needsKey ? buttonPrimary : buttonGhost}
+              >
+                Open settings
+              </button>
+            </>
+          )}
+          {tab === 'improve' && improve.status === 'done' && (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setImprove({ status: 'idle' });
+                  setTab('gaps');
+                }}
+                className={buttonGhost}
+              >
+                Discard
+              </button>
+              <button type="button" onClick={() => onApply(improve.improvement.rewrite)} className={buttonPrimary}>
+                Apply to chat
+              </button>
+            </>
+          )}
+          {tab === 'improve' && improve.status === 'loading' && (
+            <button type="button" disabled className={buttonPrimary}>
+              Apply to chat
             </button>
           )}
         </div>

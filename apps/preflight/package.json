@@ -15,12 +15,17 @@
     "zip": "wxt zip && wxt zip -b firefox --mv3",
     "typecheck": "tsc --noEmit",
     "postinstall": "wxt prepare",
-    "test:e2e": "wxt build && playwright test"
+    "test:e2e": "wxt build && playwright test",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0",
     "@askwell/rules": "workspace:*",
+    "@google/genai": "^2.28.0",
+    "openai": "^7.32.0",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.0",
@@ -31,6 +36,7 @@
     "@wxt-dev/module-react": "^1.2.2",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
+    "vitest": "^5.0.3",
     "wxt": "^0.21.4"
   }
 }

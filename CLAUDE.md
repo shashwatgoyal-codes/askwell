@@ -10,6 +10,10 @@ gemini.google.com before it is sent.
 - `apps/preflight/lib/sites.ts` — where each chat site keeps its prompt box. When a site redesigns,
   this is the file to fix. The e2e tests serve stand-in pages at the real URLs, so they prove the
   extension works but not that a live site's markup still matches.
+- `apps/preflight/lib/improve` — Improve: the instructions and JSON contract every provider must meet,
+  and one call per provider through its official SDK, run only from the background worker. The
+  Anthropic default model is `claude-opus-5-5` at low effort with server-side fallback; OpenAI and
+  Gemini models are picked from the key's own model list rather than hard-coded.
 - `packages/rules` — the prompt checks. Plain TypeScript with no browser APIs, so the extension and a
   future Claude Code hook can share them. Every check gets tests.
 

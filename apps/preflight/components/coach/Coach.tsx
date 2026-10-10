@@ -1,7 +1,7 @@
 import { runChecks, type CheckId, type Sensitivity } from '@askwell/rules';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { disabledChecks, disabledSites, sensitivity } from '@/lib/settings';
-import { findComposer, readText, type Site } from '@/lib/sites';
+import { findComposer, readText, writeText, type Site } from '@/lib/sites';
 import { isDarkBehind } from '@/lib/theme';
 import { Badge } from './Badge';
 import { Panel } from './Panel';
@@ -93,9 +93,17 @@ export function Coach({ site }: { site: Site }) {
     >
       {open && (
         <Panel
+          draft={text}
           gaps={gaps}
           onClose={() => setOpen(false)}
           onMute={(id) => setMuted((prev) => new Set(prev).add(id))}
+          onApply={(rewrite) => {
+            const el = composerRef.current;
+            if (!el) return;
+            writeText(el, rewrite);
+            setText(readText(el));
+            setOpen(false);
+          }}
         />
       )}
       <Badge count={gaps.length} open={open} onClick={() => setOpen((v) => !v)} />
