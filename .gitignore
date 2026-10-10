@@ -11,3 +11,6 @@ web-ext-artifacts/
 test-results/
 playwright-report/
 dist/
+
+# Local git hooks: kept on this machine, not shared.
+.githooks/pre-commit
