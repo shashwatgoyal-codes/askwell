@@ -28,6 +28,9 @@ pnpm test:e2e       # builds, then drives Chromium with the extension loaded (Pl
 pnpm typecheck
 ```
 
+CI (`.github/workflows/ci.yml`) runs typecheck, unit and browser tests on every push to `main`.
+Pushing a `preflight-v<version>` tag runs `release.yml`, which publishes the zips; see README → Release.
+
 ## Rules
 
 - **One author.** Commit as `Shashwat Goyal <shashwatgoyaloffice@gmail.com>`. Never add

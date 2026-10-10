@@ -1,6 +1,10 @@
 import type { CheckId, Gap } from '@askwell/rules';
 import { z } from 'zod';
 
+// Extensions forbid eval. Zod would probe for it and fall back on its own;
+// saying so up front skips the probe and the CSP error it logs.
+z.config({ jitless: true });
+
 // What every provider must return, whichever SDK produced it.
 
 export const CHANGE_KINDS = ['assumedMemory', 'context', 'goal', 'constraints', 'output', 'clarity'] as const;

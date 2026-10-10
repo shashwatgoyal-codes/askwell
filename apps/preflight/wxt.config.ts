@@ -29,7 +29,18 @@ export default defineConfig({
     ],
     ...(browser === 'chrome' || browser === 'edge' ? { key: CHROME_PUBLIC_KEY } : {}),
     ...(browser === 'firefox'
-      ? { browser_specific_settings: { gecko: { id: 'preflight@askwell' } } }
+      ? {
+          browser_specific_settings: {
+            gecko: {
+              id: 'preflight@askwell',
+              // Firefox asks every new extension to declare what leaves the
+              // browser. The checks send nothing, but Improve sends the typed
+              // prompt to the provider whose key the user entered, so that is
+              // declared rather than claiming "none".
+              data_collection_permissions: { required: ['websiteContent'] },
+            },
+          },
+        }
       : {}),
   }),
 });

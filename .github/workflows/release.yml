@@ -1,0 +1,65 @@
+name: Release Preflight
+
+# Push a tag like preflight-v0.1.0 to publish a GitHub release with the
+# Chrome/Edge/Brave zip, the Firefox zip and the sources zip. Nothing is
+# sent to any browser store.
+#
+# Optional, for a Firefox build that installs permanently: add repository
+# secrets AMO_JWT_ISSUER and AMO_JWT_SECRET (free, from addons.mozilla.org >
+# Developer Hub > Manage API Keys). The add-on is then signed as unlisted:
+# Mozilla signs it but does not list it publicly.
+
+on:
+  push:
+    tags: ['preflight-v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    # Job-level so the signing step's `if` can see whether they are set.
+    env:
+      AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
+      AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Tag matches package version
+        run: |
+          version=$(node -p "require('./apps/preflight/package.json').version")
+          if [ "${GITHUB_REF_NAME}" != "preflight-v${version}" ]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match apps/preflight/package.json version ${version}." >&2
+            exit 1
+          fi
+
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm zip
+
+      - name: Sign the Firefox build (unlisted)
+        if: ${{ env.AMO_JWT_ISSUER != '' }}
+        run: |
+          npx --yes web-ext@10 sign \
+            --source-dir apps/preflight/.output/firefox-mv3 \
+            --artifacts-dir apps/preflight/.output/signed \
+            --channel unlisted \
+            --api-key "$AMO_JWT_ISSUER" \
+            --api-secret "$AMO_JWT_SECRET"
+
+      - name: Publish the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          shopt -s nullglob
+          files=(apps/preflight/.output/*.zip apps/preflight/.output/signed/*.xpi)
+          gh release create "$GITHUB_REF_NAME" "${files[@]}" \
+            --title "Preflight ${GITHUB_REF_NAME#preflight-v}" \
+            --generate-notes

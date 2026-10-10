@@ -20,14 +20,31 @@ pnpm install
 pnpm dev
 ```
 
-## Install a build
+## Install
+
+Download the zip for your browser from the [latest release](https://github.com/shashwatgoyal-codes/askwell/releases),
+or build it yourself with `pnpm zip` (files land in `apps/preflight/.output`).
+
+- **Chrome, Brave or Edge:** unzip `preflight-<version>-chrome.zip`, open the extensions page, turn on
+  Developer mode, choose **Load unpacked** and pick the unzipped folder.
+- **Firefox:** install the signed `.xpi` from the release if there is one. Otherwise open
+  `about:debugging` → This Firefox → **Load Temporary Add-on** and pick the Firefox zip; Firefox removes
+  temporary add-ons when it restarts.
+
+Then open Preflight's settings and add an API key if you want Improve. The checks work without one.
+
+## Release
+
+Bump `version` in `apps/preflight/package.json`, commit, then tag and push:
 
 ```
-pnpm build
+git tag preflight-v0.1.0
+git push origin preflight-v0.1.0
 ```
 
-Chrome, Brave or Edge: open the extensions page, turn on Developer mode, choose **Load unpacked** and
-pick `apps/preflight/.output/chrome-mv3`.
+The Release workflow checks the tag matches the version, runs the tests and attaches the zips to a
+GitHub release. With the `AMO_JWT_ISSUER` and `AMO_JWT_SECRET` repository secrets set, it also signs
+the Firefox build as unlisted (signed by Mozilla, not listed publicly) so it installs permanently.
 
 ## Privacy
 
