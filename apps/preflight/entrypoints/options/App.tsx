@@ -18,10 +18,10 @@ import { SITES } from '@/lib/sites';
 
 const CHECKS: { id: CheckId; name: string; detail: string; from: Sensitivity }[] = [
   { id: 'assumedMemory', name: 'Assumed memory', detail: '“As you know”, “like before”: things the AI can’t see', from: 'relaxed' },
-  { id: 'context', name: 'Context', detail: 'Errors, code and anything the prompt points to but doesn’t include', from: 'relaxed' },
-  { id: 'goal', name: 'Goal', detail: 'Says what “done” looks like', from: 'balanced' },
-  { id: 'constraints', name: 'Constraints', detail: 'What must not change', from: 'strict' },
-  { id: 'output', name: 'Output', detail: 'The shape of the answer you want back', from: 'strict' },
+  { id: 'context', name: 'Context', detail: 'Errors, code, anything pointed to but not included, and a plan’s starting level', from: 'relaxed' },
+  { id: 'goal', name: 'Goal', detail: 'What “done” looks like, or what a learning plan is for', from: 'balanced' },
+  { id: 'constraints', name: 'Constraints', detail: 'A plan’s time frame; for code changes, what must not change (Strict)', from: 'balanced' },
+  { id: 'output', name: 'Output', detail: 'The shape of the answer: a plan’s format; for code changes, patch or file (Strict)', from: 'balanced' },
 ];
 const RANK: Record<Sensitivity, number> = { relaxed: 0, balanced: 1, strict: 2 };
 
@@ -115,6 +115,10 @@ function ProviderSection() {
     const response = (await browser.runtime.sendMessage(request)) as ModelsResponse;
     if (!response.ok) {
       setStatus({ kind: 'error', text: response.error });
+      return;
+    }
+    if (response.models.length === 0) {
+      setStatus({ kind: 'error', text: 'Key works, but it offers no text models Preflight can use.' });
       return;
     }
     await apiKeys.setValue({ ...keys, [chosen]: key });

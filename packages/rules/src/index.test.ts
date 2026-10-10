@@ -169,3 +169,48 @@ describe('options', () => {
     ]);
   });
 });
+
+describe('plans, learning and advice', () => {
+  const yours =
+    'Be my mentor and help me prepare a plan for learning System Design. I am software developer with 1 year of experience and a fresh gradutate and need assistance.';
+
+  it('flags the purpose, the time frame and the format of the system design prompt', () => {
+    expect(ids(yours)).toEqual(['goal', 'constraints', 'output']);
+  });
+
+  it('finds nothing once the prompt says why, how long and in what shape', () => {
+    const better =
+      'Be my mentor and help me prepare a plan for learning System Design to crack backend interviews. ' +
+      'I am a software developer with 1 year of experience. I have 8 hours a week for 3 months. ' +
+      'Give me a week-by-week plan with one resource per topic.';
+    expect(ids(better, strict)).toEqual([]);
+  });
+
+  it('asks for the starting point when it is missing', () => {
+    expect(ids('Help me make a learning plan for Kubernetes')).toContain('context');
+    expect(ids('Help me make a learning plan for Kubernetes', { sensitivity: 'relaxed' })).not.toContain('context');
+  });
+
+  it.each([
+    ['Create a roadmap to become a backend engineer, 10 hours a week', 'goal'],
+    ['I want to learn Rust to build CLI tools. Make me a plan.', 'goal'],
+  ])('accepts what is stated: %j', (prompt, satisfied) => {
+    expect(ids(prompt)).not.toContain(satisfied);
+  });
+
+  it.each([
+    'Write a function that reverses a string in place.',
+    'Explain the difference between useMemo and useCallback.',
+    'Summarize this article in 3 bullet points',
+    'Suggest five names for a planner app.',
+    'What is a closure in JavaScript?',
+    'plan the migration of this function to async/await',
+    'Help me understand how DNS works',
+    'Give me advice on negotiating my salary offer',
+    'Teach me recursion with simple examples',
+    'Plan a 3 day trip to Goa for two people',
+    'What should I learn next after React?',
+  ])('leaves non-plan requests to the other checks: %j', (prompt) => {
+    expect(ids(prompt).filter((id) => id !== 'context')).toEqual([]);
+  });
+});

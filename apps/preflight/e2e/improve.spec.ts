@@ -92,3 +92,50 @@ test('Improve without a key points to settings and changes nothing', async ({ si
   await expect(panel.getByRole('button', { name: 'Open settings' })).toBeVisible();
   await expect(page.locator('#prompt-textarea')).toHaveText('fix the login bug, same as before');
 });
+
+test('Gemini: only text models are offered, stable Flash first, and a 404 says what to do', async ({ context, extensionId, site }) => {
+  await context.route('https://generativelanguage.googleapis.com/**', (route) => {
+    const url = route.request().url();
+    if (url.includes(':generateContent')) {
+      return route.fulfill({
+        status: 404,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: { code: 404, message: 'models/x is not found', status: 'NOT_FOUND' } }),
+      });
+    }
+    const model = (name: string) => ({ name: `models/${name}`, supportedGenerationMethods: ['generateContent', 'countTokens'] });
+    return route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        models: [
+          model('gemini-9.0-pro-preview'),
+          model('gemini-9.0-flash-image'),
+          model('gemini-9.0-flash-preview-tts'),
+          model('gemini-8.5-pro'),
+          model('gemini-9.0-flash-lite'),
+          model('gemini-9.0-flash'),
+          { name: 'models/gemini-embedding-9', supportedGenerationMethods: ['embedContent'] },
+        ],
+      }),
+    });
+  });
+
+  const settings = await context.newPage();
+  await settings.goto(`chrome-extension://${extensionId}/options.html`);
+  await settings.getByRole('radio', { name: 'Gemini' }).click();
+  await settings.getByLabel('Gemini API key').fill('AIza-test-not-real');
+  await settings.getByRole('button', { name: 'Test and save' }).click();
+  await expect(settings.getByText('Key works · 4 models available')).toBeVisible();
+  const options = await settings.getByLabel('Model for Improve').locator('option').allTextContents();
+  expect(options).toEqual(['gemini-9.0-flash', 'gemini-9.0-flash-lite', 'gemini-8.5-pro', 'gemini-9.0-pro-preview']);
+  await expect(settings.getByLabel('Model for Improve')).toHaveValue('gemini-9.0-flash');
+
+  const page = await site('https://gemini.google.com/app');
+  await page.locator('rich-textarea .ql-editor').click();
+  await page.keyboard.type('fix the login bug, same as before');
+  await page.getByRole('button', { name: /^Preflight: \d gaps/ }).click();
+  await page.getByRole('button', { name: 'Improve with AI' }).click();
+  const panel = page.getByRole('region', { name: 'Preflight' });
+  await expect(panel.getByText('Gemini doesn’t serve gemini-9.0-flash to this key. Pick another model in settings.')).toBeVisible();
+  await expect(panel.getByRole('button', { name: 'Open settings' })).toBeVisible();
+});

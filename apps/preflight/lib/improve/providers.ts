@@ -93,6 +93,9 @@ async function viaGemini(key: string, model: string, prompt: string, gaps: Gap[]
       if (error.status === 400 || error.status === 401 || error.status === 403) {
         throw new ImproveError('Gemini rejected this key or model.', true);
       }
+      if (error.status === 404) {
+        throw new ImproveError(`Gemini doesn’t serve ${model} to this key. Pick another model in settings.`, true);
+      }
       if (error.status === 429) throw new ImproveError('Gemini is rate limiting this key. Try again shortly.');
       throw new ImproveError(`Gemini returned an error (${error.status}).`);
     }
@@ -123,6 +126,18 @@ export async function improve(provider: Provider, key: string, model: string, pr
 const OPENAI_CHAT = /^(gpt-|o\d|chatgpt-)/;
 const OPENAI_NOT_CHAT = /(audio|realtime|transcribe|tts|image|embedding|search|instruct|moderation)/;
 
+// Gemini lists models that answer in audio, images or live sessions, or not
+// at all to most keys; a text rewrite needs none of them.
+const GEMINI_NOT_TEXT = /(tts|image|live|audio|native|embedding|aqa|robotics|computer-use|veo|imagen|learnlm)/;
+
+/** Stable Flash first: fast, cheap, and served to free-tier keys. Previews and experiments last. */
+function geminiRank(id: string): number {
+  if (/(preview|exp)/.test(id)) return 3;
+  if (/flash-lite/.test(id)) return 1;
+  if (/flash/.test(id)) return 0;
+  return 2;
+}
+
 export async function listModels(provider: Provider, key: string): Promise<string[]> {
   try {
     if (provider === 'anthropic') {
@@ -143,9 +158,11 @@ export async function listModels(provider: Provider, key: string): Promise<strin
     const ids: string[] = [];
     for await (const model of await ai.models.list()) {
       const id = model.name?.replace(/^models\//, '');
-      if (id?.startsWith('gemini') && model.supportedActions?.includes('generateContent')) ids.push(id);
+      if (id?.startsWith('gemini') && !GEMINI_NOT_TEXT.test(id) && model.supportedActions?.includes('generateContent')) {
+        ids.push(id);
+      }
     }
-    return ids;
+    return ids.sort((a, b) => geminiRank(a) - geminiRank(b) || b.localeCompare(a, undefined, { numeric: true }));
   } catch (error) {
     if (
       error instanceof Anthropic.AuthenticationError ||

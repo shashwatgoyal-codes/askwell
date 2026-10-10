@@ -13,6 +13,10 @@ export interface Analysis {
   changesCode: boolean;
   /** A how-to or what-is question about a topic, not about the asker's own code. */
   generalQuestion: boolean;
+  /** Asks for a plan, a learning path or advice rather than code. */
+  asksForPlan: boolean;
+  /** Says where the person is starting from: experience, level, what they know. */
+  statesLevel: boolean;
   /** A vague "make it better" request with no target. */
   vagueImprovement: boolean;
   /** An error, a stack frame, a status code, a file:line, or pasted code. */
@@ -50,6 +54,20 @@ const QUESTION = /^\s*(how|what|why|when|where|which|is|are|can|could|does|do|sh
 const PERSONAL =
   /\b(my|our|this|these|it|it['’]s|i['’]m getting|i get|i got|we get|we['’]re getting|keeps?|still|again|here)\b/i;
 
+// Learning plans and roadmaps only. Questions ("help me understand DNS"),
+// explanations and general advice already get useful answers without a
+// time frame or a format, so they are left alone.
+const PLAN_NOUN = /\b(plan|roadmap|road map|schedule|curriculum|syllabus|study guide|learning path|timetable)\b/i;
+const LEARNING =
+  /\b(learn(ing)?|study|studying|prepare|preparation|prep|interviews?|exams?|master|skills?|courses?|become|career|upskill|get better)\b/i;
+const MENTOR = /\b(be my mentor|mentor me|act as my mentor|be my coach|coach me)\b/i;
+// A plan request about code ("plan the migration of this function") is a
+// code request; the code checks cover it.
+const CODE_NOUN =
+  /\b(function|component|class|method|endpoint|api route|query|regex|script|bug|error|stack ?trace|this code|the code|my code|refactor|migration)\b/i;
+const LEVEL =
+  /\b(i (am|['’]m|have|know|already|work|use|used|studied|finished|completed|can)|i['’]ve|my (background|experience|level|skills?)|years? of experience|yoe|beginner|intermediate|advanced|fresher|fresh graduate|graduate|student|junior|senior|familiar with|new to|comfortable with)\b/i;
+
 const UNSEEN =
   /\b(this|my|our|the following|the attached)\s+(code|function|component|file|query|script|class|snippet|error|log|logs|stack ?trace|output|test|tests|endpoint|schema)\b/i;
 const POINTER = /\b(below|above|attached)\b/i;
@@ -64,11 +82,15 @@ export function analyze(prompt: string): Analysis {
   const pointsAway = !hasCode && POINTER.test(prose) && /\b(code|error|log|output|function)\b/i.test(prose);
 
   const generalQuestion = QUESTION.test(prose) && !PERSONAL.test(prose);
+  const asksForPlan =
+    ((PLAN_NOUN.test(prose) && LEARNING.test(prose)) || MENTOR.test(prose)) && !CODE_NOUN.test(prose) && !hasCode && words >= 6;
 
   return {
     prose,
     words,
     generalQuestion,
+    asksForPlan,
+    statesLevel: LEVEL.test(prose),
     reportsBug: BUG.test(prose) && !generalQuestion,
     changesCode: CHANGE.test(prose) && !generalQuestion,
     vagueImprovement: VAGUE.test(prose),
