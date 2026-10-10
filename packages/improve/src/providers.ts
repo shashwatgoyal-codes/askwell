@@ -2,12 +2,14 @@ import Anthropic from '@anthropic-ai/sdk';
 import { ApiError as GeminiError, GoogleGenAI } from '@google/genai';
 import OpenAI from 'openai';
 import type { Gap } from '@askwell/rules';
-import type { Provider } from '../settings';
+/** The providers Improve can call with a person's own key. */
+export type Provider = 'anthropic' | 'openai' | 'gemini';
 import { IMPROVEMENT_SCHEMA, INSTRUCTIONS, Improvement, userMessage } from './contract';
 
-// Runs only in the background worker. dangerouslyAllowBrowser is safe here
-// in the sense the flag warns about: the key is the user's own, typed into
-// this extension, and never reaches a web page or a server of ours.
+// In the extension this runs only in the background worker, where
+// dangerouslyAllowBrowser is safe in the sense the flag warns about: the key
+// is the person's own and never reaches a web page. On the portal it runs on
+// the server with the owner's key.
 
 export class ImproveError extends Error {
   constructor(

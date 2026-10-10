@@ -92,7 +92,8 @@ export async function recordSent(gapIds: CheckId[]): Promise<void> {
   await history.setValue(addSent(await history.getValue(), gapIds));
 }
 
-export type Provider = 'anthropic' | 'openai' | 'gemini';
+export type { Provider } from '@askwell/improve';
+import type { Provider } from '@askwell/improve';
 
 export const PROVIDERS: { id: Provider; name: string; keyHint: string }[] = [
   { id: 'anthropic', name: 'Anthropic', keyHint: 'sk-ant-…' },

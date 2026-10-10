@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { highlight } from '@/components/coach/ImproveView';
-import { Improvement } from './contract';
+import { Improvement } from '@askwell/improve';
 
 const added = (runs: { text: string; added: boolean }[]) => runs.filter((r) => r.added).map((r) => r.text);
 

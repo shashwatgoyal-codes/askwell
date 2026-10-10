@@ -6,7 +6,7 @@ import type {
   ProbeRequest,
   ProbeResponse,
 } from '@/lib/improve/contract';
-import { ImproveError, improve, listModels, probeModel } from '@/lib/improve/providers';
+import { ImproveError, improve, listModels, probeModel } from '@askwell/improve';
 import { apiKeys, models, provider } from '@/lib/settings';
 
 type Message = { type: 'open-settings' } | ImproveRequest | ModelsRequest | ProbeRequest;
