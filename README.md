@@ -9,13 +9,15 @@
   <img alt="Chrome, Brave, Edge, Firefox" src="https://img.shields.io/badge/browsers-Chrome%20%C2%B7%20Brave%20%C2%B7%20Edge%20%C2%B7%20Firefox-555">
 </p>
 
-**Preflight** is a free browser extension that reads the prompt you are typing into ChatGPT, Claude or
-Gemini and points out what is missing before you press Send: the error you meant to paste, what
+**Preflight** is a free browser extension that reads the prompt you are typing into an AI chat and points
+out what is missing before you press Send: the error you meant to paste, what
 "working" should look like, the context the AI can't see. Most wasted AI answers come from a prompt
 that read as complete to the person who wrote it. Preflight catches that in the second before it
 costs a round trip.
 
-It runs in your browser, needs no account, and only talks to an AI provider when you ask it to.
+It works on **ChatGPT, Claude, Gemini, Perplexity, Copilot, Grok, DeepSeek and Le Chat**, and the same
+checks run in **Claude Code** as a hook. It runs in your browser, needs no account, and only talks to an
+AI provider when you ask it to.
 
 [**Download the latest release →**](https://github.com/shashwatgoyal-codes/askwell/releases/latest)
 
@@ -44,8 +46,21 @@ It runs in your browser, needs no account, and only talks to an AI provider when
     </td>
     <td width="50%" valign="top">
       <img src="docs/images/popup.png" alt="The Preflight popup with today's counts" width="62%">
-      <p><b>A quiet popup.</b> Turn coaching off for a site, and see today's prompts checked, gaps caught and
-      your most common gap. Counts only; your prompts are never stored.</p>
+      <p><b>Your week, at a glance.</b> Turn coaching off for a site, see today's numbers and the week: prompts
+      per day, gaps per prompt against last week, and your most common gap. Counts only; your prompts are never stored.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/library.png" alt="The library tab with saved prompts">
+      <p><b>A prompt library.</b> Save a prompt or an Improve rewrite, and insert it into any supported chat
+      later. Manage it, and copy from it, in settings.</p>
+    </td>
+    <td width="50%" valign="top">
+      <p><b>Your own rules.</b> Add checks in plain words: when a prompt mentions <i>prisma</i>, it should also
+      mention <i>prisma 6</i>. They run with the built-in checks and show under their own name.</p>
+      <p><b>Every AI chat you use.</b> Each site's prompt box is known by name, and where a site redesigns, the
+      box you are typing in is found anyway.</p>
     </td>
   </tr>
 </table>
@@ -59,6 +74,7 @@ It runs in your browser, needs no account, and only talks to an AI provider when
 | **Goal** | No statement of what done looks like, or what a learning plan is for | "clean up the auth module", "make me a plan for system design" |
 | **Constraints** | A plan with no time frame; on Strict, a code change with no limits | "8 hours a week for 3 months", "keep the public API" |
 | **Output** | A plan with no format; on Strict, a code change that doesn't say what to send back | "a week-by-week plan", "reply with a patch only" |
+| **Your rules** | Whatever you write in settings | "when it mentions prisma, mention the version" |
 
 Sensitivity is **Relaxed**, **Balanced** (default) or **Strict**, and every check can be switched off.
 General questions ("how does DNS work?") and ordinary requests are left alone.
@@ -84,7 +100,7 @@ settings follow your device's light or dark theme; the in-page coach follows the
    **Firefox:** open `about:debugging` → This Firefox → **Load Temporary Add-on** and pick the
    `manifest.json` inside the folder. Firefox removes temporary add-ons when it restarts; a signed `.xpi`
    is attached to releases when one is available.
-3. Open ChatGPT, Claude or Gemini and start typing.
+3. Open any supported AI chat and start typing.
 
 The checks work without any key. To use **Improve**, open Preflight's settings and add a key:
 

@@ -40,7 +40,7 @@ test('README images', async ({ context, extensionId, site }) => {
       <div style="display:flex;flex-direction:column;gap:14px">
         <div style="font-size:64px;font-weight:500;letter-spacing:-0.03em;line-height:1">Preflight</div>
         <div style="font-size:26px;letter-spacing:-0.01em;color:#A1A1AA">Checks your AI prompt <span style="color:#EDEDEF">before you send it.</span></div>
-        <div class="mono" style="font-size:14px;letter-spacing:0.08em;color:#8A8A93">BY ASKWELL · CHATGPT · CLAUDE · GEMINI</div>
+        <div class="mono" style="font-size:14px;letter-spacing:0.08em;color:#8A8A93">BY ASKWELL · CHATGPT · CLAUDE · GEMINI · AND MORE</div>
       </div>
     </div>`,
     'banner.png',
@@ -67,6 +67,11 @@ test('README images', async ({ context, extensionId, site }) => {
   await page.getByRole('button', { name: /^Preflight: \d gaps/ }).click();
   await page.waitForTimeout(300);
   await page.screenshot({ path: out('gaps.png') });
+
+  // The library, with two saved prompts.
+  await page.getByRole('tab', { name: 'Library' }).click();
+  await page.getByRole('button', { name: 'Save prompt' }).click();
+  await page.getByRole('tab', { name: 'Gaps' }).click();
 
   // Improve: a faked provider, so nothing is sent and nothing is billed.
   await context.route('https://api.anthropic.com/**', (route) =>
@@ -117,6 +122,10 @@ test('README images', async ({ context, extensionId, site }) => {
   await page.getByRole('button', { name: 'Apply to chat' }).waitFor();
   await page.waitForTimeout(200);
   await page.screenshot({ path: out('improve.png') });
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('tab', { name: 'Library' }).click();
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: out('library.png') });
 
   // A conversation nudge.
   const chat = await site('https://chatgpt.com/c/errors');
@@ -141,8 +150,24 @@ test('README images', async ({ context, extensionId, site }) => {
   await page.waitForTimeout(800);
   const popup = await context.newPage();
   await popup.emulateMedia({ colorScheme: 'dark' });
-  await popup.setViewportSize({ width: 380, height: 590 });
+  await popup.setViewportSize({ width: 380, height: 760 });
   await popup.goto(`chrome-extension://${extensionId}/popup.html`);
+  // A believable fortnight of counts, so the weekly view has something to show.
+  await popup.evaluate(async () => {
+    const day = (offset: number) => {
+      const t = new Date();
+      t.setDate(t.getDate() + offset);
+      return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+    };
+    const rows = [[-12, 6, 11], [-9, 4, 7], [-6, 5, 6], [-5, 8, 7], [-3, 3, 2], [-2, 7, 4], [-1, 6, 3], [0, 4, 3]].map(([o, c, g]) => ({
+      day: day(o!),
+      checked: c,
+      gaps: g,
+      byCheck: { goal: Math.ceil(g! / 2), context: Math.floor(g! / 2) },
+    }));
+    await (globalThis as unknown as { chrome: { storage: { local: { set(v: object): Promise<void> } } } }).chrome.storage.local.set({ history: rows });
+  });
+  await popup.reload();
   await popup.waitForTimeout(400);
   await popup.screenshot({ path: out('popup.png') });
 });
