@@ -47,6 +47,9 @@ const holder = globalThis as unknown as { __askwellDb?: Promise<Query> };
 export function getDb(): Promise<Query> {
   holder.__askwellDb ??= (async () => {
     const url = process.env.DATABASE_URL;
+    // The in-memory database forgets everything on restart, and serverless
+    // hosts restart constantly: tokens would vanish. Refuse rather than lose them.
+    if (!url && process.env.VERCEL) throw new Error('DATABASE_URL must be set when the portal runs on Vercel.');
     if (!url) return memoryDb();
     const db = neonDb(url);
     for (const statement of SCHEMA.split(';').map((s) => s.trim()).filter(Boolean)) await db(statement);

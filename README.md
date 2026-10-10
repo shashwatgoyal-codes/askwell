@@ -142,17 +142,26 @@ For block mode put `PREFLIGHT_MODE=block ` before `node`; for other sensitivitie
 `PREFLIGHT_SENSITIVITY=relaxed` or `strict`. It reads the session's own transcript for the
 "third error in a row" kind of nudge, and needs Node 20 or later.
 
+## Admin tokens (optional)
+
+If you want to let a few people use Improve on **your** key, without giving them the key, run the small
+[portal](apps/portal/README.md) (free on Neon + Vercel). It issues one token per person with a daily
+limit and an expiry, and you can revoke any of them. They paste the token into Preflight's settings
+under **Admin token**.
+
 ## Privacy
 
 - The checks run inside your browser. Preflight has no server, no account and no analytics.
 - Your API key is stored only in the extension's local storage on your device, and is sent only to the
   provider it belongs to.
 - Text leaves your browser only when you click **Improve**, and then it goes only to the AI provider whose
-  key you entered, under that provider's terms. The end-of-session summary is asked of the chat you are
+  key you entered, under that provider's terms, or to the portal whose admin token you entered. The end-of-session summary is asked of the chat you are
   already in, so it sends nothing anywhere new.
 - Today's counts in the popup are numbers only; your prompts are never stored.
 - Preflight never sends a message for you. It can fill the chat box; you always press Send. Its buttons
   respond only to real clicks, so the chat page's own scripts can't trigger them.
+
+The full policy is in [PRIVACY.md](PRIVACY.md).
 
 ## Not affiliated
 
@@ -187,6 +196,8 @@ apps/preflight/          the extension (WXT, React, TypeScript, Tailwind)
   e2e/                   browser tests, run against stand-in pages at the real URLs
 packages/rules/          the checks: plain TypeScript, no browser APIs, fully tested
 packages/claude-hook/    the same checks as a Claude Code hook, bundled to one file
+packages/improve/        the rewrite contract and provider calls, shared by the extension and portal
+apps/portal/             admin tokens: a small Next.js app on Neon + Vercel
 docs/                    logo files and README images
 ```
 

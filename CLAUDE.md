@@ -21,6 +21,10 @@ gemini.google.com before it is sent.
   pure and tested; `src/cli.ts` only does stdin/stdout. It must exit 0 on any failure so it never
   stops anyone working. Warnings go out as `systemMessage` (shown to the person, not added to
   Claude's context); block mode exits 2.
+- `packages/improve` — the rewrite contract and the provider calls, shared by the extension and the portal.
+- `apps/portal` — admin tokens (Next.js). `lib/api.ts` and `lib/tokens.ts` hold the logic and are tested
+  on PGlite; route files only wire them. Never log or return `ANTHROPIC_API_KEY`; store tokens only as hashes.
+- `store/` and `PRIVACY.md` — store listing material; screenshots come from `STORE=1 … e2e/store.spec.ts`.
 - `packages/rules` — the prompt checks. Plain TypeScript with no browser APIs, so the extension and a
   future Claude Code hook can share them. Every check gets tests.
 
