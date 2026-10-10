@@ -33,6 +33,8 @@ pnpm typecheck
 - **One author.** Commit as `Shashwat Goyal <shashwatgoyaloffice@gmail.com>`. Never add
   `Co-Authored-By` lines for Claude or a "Generated with Claude Code" line; the `commit-msg` hook in
   `.githooks/` refuses them. Commit and push only when asked; pushes use Shashwat's own credentials.
+- **No secrets in git.** `.env*` and `*.pem` are ignored, and the `pre-commit` hook refuses secrets
+  files and anything shaped like a real API key or private key. Tests use obviously fake keys.
 - **Bring your own key.** A user's API key stays in `storage.local` in the extension and goes only to
   the provider. It never reaches a server of ours and is never logged.
 - **Checks run locally.** Nothing leaves the browser unless the user clicks Improve or Summary.
