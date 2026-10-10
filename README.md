@@ -23,7 +23,7 @@ pnpm dev
 ## Install
 
 Download the zip for your browser from the [latest release](https://github.com/shashwatgoyal-codes/askwell/releases),
-or build it yourself with `pnpm zip` (files land in `apps/preflight/.output`).
+or build it yourself with `pnpm zip` (files land in `apps/preflight/dist`).
 
 - **Chrome, Brave or Edge:** unzip `preflight-<version>-chrome.zip`, open the extensions page, turn on
   Developer mode, choose **Load unpacked** and pick the unzipped folder.

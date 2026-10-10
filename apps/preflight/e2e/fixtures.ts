@@ -1,7 +1,7 @@
 import { chromium, test as base, type BrowserContext, type Page } from '@playwright/test';
 import path from 'node:path';
 
-const extensionPath = path.resolve(import.meta.dirname, '../.output/chrome-mv3');
+const extensionPath = path.resolve(import.meta.dirname, '../dist/chrome-mv3');
 
 // The chat sites need a login, so tests serve a stand-in page at the real
 // address. The content script matches on the URL, so it loads exactly as it

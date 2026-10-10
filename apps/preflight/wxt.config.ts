@@ -3,6 +3,8 @@ import { defineConfig } from 'wxt';
 import { CHROME_PUBLIC_KEY } from './extension-key';
 
 export default defineConfig({
+  // A visible folder: browsers' "Load unpacked" pickers hide dot-folders.
+  outDir: 'dist',
   modules: ['@wxt-dev/module-react', '@wxt-dev/auto-icons'],
   autoIcons: {
     baseIconPath: 'assets/icon.svg',

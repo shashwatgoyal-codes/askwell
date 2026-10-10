@@ -48,8 +48,8 @@ jobs:
         if: ${{ env.AMO_JWT_ISSUER != '' }}
         run: |
           npx --yes web-ext@10 sign \
-            --source-dir apps/preflight/.output/firefox-mv3 \
-            --artifacts-dir apps/preflight/.output/signed \
+            --source-dir apps/preflight/dist/firefox-mv3 \
+            --artifacts-dir apps/preflight/dist/signed \
             --channel unlisted \
             --api-key "$AMO_JWT_ISSUER" \
             --api-secret "$AMO_JWT_SECRET"
@@ -59,7 +59,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           shopt -s nullglob
-          files=(apps/preflight/.output/*.zip apps/preflight/.output/signed/*.xpi)
+          files=(apps/preflight/dist/*.zip apps/preflight/dist/signed/*.xpi)
           gh release create "$GITHUB_REF_NAME" "${files[@]}" \
             --title "Preflight ${GITHUB_REF_NAME#preflight-v}" \
             --generate-notes

@@ -3,11 +3,11 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".output/**", "!.output/*.zip"]
+      "outputs": ["dist/**", "!dist/*.zip"]
     },
     "zip": {
       "dependsOn": ["^build"],
-      "outputs": [".output/*.zip"]
+      "outputs": ["dist/*.zip"]
     },
     "test": {},
     "typecheck": {},
