@@ -14,3 +14,6 @@ dist/
 
 # Local git hooks: kept on this machine, not shared.
 .githooks/pre-commit
+
+# Generated on every build by scripts/notices.mjs.
+apps/preflight/public/THIRD_PARTY_NOTICES.txt
