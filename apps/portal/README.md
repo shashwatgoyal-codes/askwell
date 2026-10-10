@@ -6,7 +6,7 @@ limit, an optional expiry and a revoke button. One admin (you), signed in with a
 ## Run it locally
 
 ```
-cp apps/portal/.env.example apps/portal/.env.local   # then fill in ADMIN_EMAIL, ADMIN_PASSWORD and SESSION_SECRET
+cp apps/portal/.env.example apps/portal/.env.local   # then fill in ADMIN_EMAIL, ADMIN_PASSWORD_HASH and SESSION_SECRET
 pnpm --filter @askwell/portal dev                     # http://localhost:3100
 ```
 
@@ -25,7 +25,7 @@ Without `DATABASE_URL` it uses an in-memory database that resets when the server
    |---|---|
    | `DATABASE_URL` | the Neon connection string |
    | `ADMIN_EMAIL` | the email you'll sign in with |
-   | `ADMIN_PASSWORD` | a long password (20+ characters from a password manager) |
+   | `ADMIN_PASSWORD_HASH` | a scrypt hash of a long password (20+ characters from a password manager). Make it with `pnpm --filter @askwell/portal hash-password`, which asks for the password twice without showing it. The password itself is stored nowhere, and a plain `ADMIN_PASSWORD` is not accepted. |
    | `SESSION_SECRET` | 32+ random characters: `openssl rand -base64 48` |
    | `ANTHROPIC_API_KEY` | your key; token holders' rewrites are billed to it |
    | `PORTAL_MODEL` | optional, defaults to `claude-opus-5-5` |
@@ -48,5 +48,7 @@ spend limit is the backstop.
   from one network in 15 minutes that network is locked out for 15 minutes, and after 20 failures from
   anywhere in an hour sign-in is paused for everyone for an hour. While locked, even the right password is
   refused.
+- The admin password is never stored, only a salted scrypt hash of it (N = 2¹⁵, r = 8), so someone who
+  reads the Vercel settings still can't sign in or recover the password.
 - The admin session is a signed, HTTP-only, same-site cookie.
 - The portal stores no prompt text: only token metadata and per-day counts.

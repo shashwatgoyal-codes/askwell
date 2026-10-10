@@ -1,8 +1,9 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { jwtVerify, SignJWT } from 'jose';
 import { cookies } from 'next/headers';
+import { DUMMY_HASH, verifyPassword } from './password';
 
-// One admin: whoever knows ADMIN_EMAIL and ADMIN_PASSWORD. The session is a signed cookie;
+// One admin: whoever knows ADMIN_EMAIL and the password hashed in ADMIN_PASSWORD_HASH. The session is a signed cookie;
 // nothing about it is stored.
 
 const COOKIE = 'askwell_admin';
@@ -17,20 +18,24 @@ function secret(): Uint8Array {
 const digest = (value: string) => createHash('sha256').update(value).digest();
 
 /**
- * Both must match. Constant-time, and compares hashes so lengths always
- * match; the email is compared case-insensitively. Both comparisons always
- * run, so timing doesn't reveal which one failed.
+ * Both must match: the email (case-insensitive, constant-time) and the
+ * password against ADMIN_PASSWORD_HASH. The password is always checked,
+ * against a dummy hash if the email is wrong, so timing doesn't reveal
+ * which one failed. A plain ADMIN_PASSWORD is not accepted.
  */
-export function credentialsMatch(
+export async function credentialsMatch(
   email: string,
   password: string,
-  expected = { email: process.env.ADMIN_EMAIL ?? '', password: process.env.ADMIN_PASSWORD ?? '' },
-): boolean {
-  if (!expected.email || !expected.password) return false;
+  expected = { email: process.env.ADMIN_EMAIL ?? '', passwordHash: process.env.ADMIN_PASSWORD_HASH ?? '' },
+): Promise<boolean> {
+  if (!expected.email || !expected.passwordHash) return false;
   const emailOk = timingSafeEqual(digest(email.trim().toLowerCase()), digest(expected.email.trim().toLowerCase()));
-  const passwordOk = timingSafeEqual(digest(password), digest(expected.password));
+  const passwordOk = await verifyPassword(password, emailOk ? expected.passwordHash : DUMMY_HASH);
   return emailOk && passwordOk;
 }
+
+/** Whether sign-in is set up at all, so the page can say what's missing instead of refusing everyone. */
+export const signInConfigured = () => Boolean(process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD_HASH);
 
 export async function startSession(): Promise<void> {
   const jwt = await new SignJWT({ role: 'admin' }).setProtectedHeader({ alg: 'HS256' }).setIssuedAt().setExpirationTime(`${WEEK}s`).sign(secret());

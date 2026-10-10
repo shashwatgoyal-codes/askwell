@@ -27,7 +27,7 @@ export async function login(_: LoginState, form: FormData): Promise<LoginState> 
   if (await isLocked(db, from)) {
     return { error: 'Too many attempts. Sign-in is paused for a while; try again later.', email };
   }
-  if (!credentialsMatch(email, String(form.get('password') ?? ''))) {
+  if (!(await credentialsMatch(email, String(form.get('password') ?? '')))) {
     await recordFailure(db, from);
     // Never say which of the two was wrong.
     return { error: 'Email or password is not right.', email };
