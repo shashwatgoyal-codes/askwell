@@ -43,7 +43,7 @@ export function highlight(rewrite: string, added: string[]): { text: string; add
 interface Props {
   state: ImproveState;
   draft: string;
-  onRetry: () => void;
+  onRetry: (event: import('react').MouseEvent) => void;
 }
 
 export function ImproveView({ state, draft, onRetry }: Props) {

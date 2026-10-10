@@ -20,13 +20,22 @@ export class ImproveError extends Error {
   }
 }
 
-/** The provider's message from an SDK error, trimmed. Never contains the key: providers don't echo it. */
-function providerDetail(error: unknown): string | undefined {
+// Providers sometimes echo part of the key back ("Incorrect API key
+// provided: sk-ab***yz"). The detail is shown inside the chat page, which
+// can read it, so anything key-shaped is hidden first.
+const KEY_SHAPED = /\b(sk-ant-[\w*.-]+|sk-[\w*.-]{4,}|AIza[\w*.-]{4,}|[A-Za-z0-9_-]{8,}\*{3,}[A-Za-z0-9_-]*)/g;
+
+export function redactKeys(text: string): string {
+  return text.replace(KEY_SHAPED, '[key hidden]');
+}
+
+/** The provider's message from an SDK error, trimmed and with anything key-shaped hidden. */
+export function providerDetail(error: unknown): string | undefined {
   if (!(error instanceof Error)) return undefined;
   // Gemini's message is the raw JSON body; pull out the human part.
   const inner = error.message.match(/"message":\s*"((?:[^"\\]|\\.)*)"/)?.[1];
   const text = (inner ?? error.message).replace(/\\n/g, ' ').replace(/\s+/g, ' ').trim();
-  return text ? text.slice(0, 240) : undefined;
+  return text ? redactKeys(text).slice(0, 240) : undefined;
 }
 
 function asImproveError(provider: Provider, model: string, error: unknown): ImproveError {

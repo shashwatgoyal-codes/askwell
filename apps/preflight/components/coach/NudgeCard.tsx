@@ -1,4 +1,5 @@
 import type { Nudge } from '@askwell/rules';
+import { realClick } from './Panel';
 
 const LABEL: Record<Nudge['id'], string> = {
   sequentialFixing: 'SEQUENTIAL FIXING',
@@ -35,7 +36,7 @@ export function NudgeCard({ nudge, width, onInsert, onDismiss }: Props) {
         </button>
         <button
           type="button"
-          onClick={onInsert}
+          onClick={realClick(onInsert)}
           className="h-9 cursor-pointer rounded-lg border border-accent/45 bg-wash px-3.5 text-[13px] font-medium text-ink"
         >
           {nudge.action}

@@ -191,3 +191,45 @@ test('Gemini: an overloaded model is retried before giving up, and a lasting ove
   await expect(panel.getByText('The model is overloaded. Please try again later.')).toBeVisible();
   await expect(panel.getByRole('button', { name: 'Try again' })).toBeVisible();
 });
+
+test('the chat page’s own scripts cannot press Improve or Apply', async ({ context, extensionId, site }) => {
+  let calls = 0;
+  await context.route('https://api.anthropic.com/**', (route) => {
+    if (route.request().url().includes('/v1/messages')) calls++;
+    return route.request().url().includes('/v1/models') ? anthropicModels(route) : anthropicMessage(route);
+  });
+  const settings = await context.newPage();
+  await settings.goto(`chrome-extension://${extensionId}/options.html`);
+  await settings.getByLabel('Anthropic API key').fill('sk-ant-test-not-real');
+  await settings.getByRole('button', { name: 'Test and save' }).click();
+  await expect(settings.getByText('answers this key')).toBeVisible();
+  const afterSetup = calls;
+
+  const page = await site('https://chatgpt.com/');
+  await page.locator('#prompt-textarea').click();
+  await page.keyboard.type('fix the login bug, same as before');
+  await page.getByRole('button', { name: /^Preflight: \d gaps/ }).click();
+
+  // What a page script can do: reach into the open shadow root and click.
+  const fakeClick = (label: string) =>
+    page.evaluate((text) => {
+      const root = document.querySelector('preflight-coach')!.shadowRoot!;
+      const button = [...root.querySelectorAll('button')].find((b) => b.textContent?.trim() === text);
+      button?.click();
+      return Boolean(button);
+    }, label);
+
+  expect(await fakeClick('Improve with AI')).toBe(true);
+  await page.waitForTimeout(800);
+  expect(calls).toBe(afterSetup);
+  // The panel stayed on the gaps list; no rewrite was started.
+  await expect(page.getByRole('tab', { name: 'Gaps' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByText('Rewriting with your key…')).toHaveCount(0);
+
+  // A real click still works.
+  await page.getByRole('button', { name: 'Improve with AI' }).click();
+  await expect(page.getByRole('button', { name: 'Apply to chat' })).toBeVisible();
+  expect(calls).toBe(afterSetup + 1);
+  expect(await fakeClick('Apply to chat')).toBe(true);
+  await expect(page.locator('#prompt-textarea')).toHaveText('fix the login bug, same as before');
+});

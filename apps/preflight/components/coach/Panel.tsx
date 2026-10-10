@@ -1,5 +1,5 @@
 import type { CheckId, Gap } from '@askwell/rules';
-import { useState } from 'react';
+import { useState, type MouseEvent } from 'react';
 import { Mark } from '@/components/Mark';
 import type { ImproveRequest, ImproveResponse } from '@/lib/improve/contract';
 import { ImproveView, type ImproveState } from './ImproveView';
@@ -11,6 +11,17 @@ const LABELS: Record<CheckId, string> = {
   constraints: 'Constraints',
   output: 'Output',
 };
+
+/**
+ * The panel lives on the chat site's page, whose scripts can dispatch fake
+ * clicks into it. Anything that spends the user's API key or changes their
+ * prompt only answers a real click.
+ */
+export const realClick =
+  (handler: () => void) =>
+  (event: MouseEvent): void => {
+    if (event.nativeEvent.isTrusted) handler();
+  };
 
 /** The feature list promises at most two at a time; the rest wait behind a button. */
 const SHOWN = 2;
@@ -92,7 +103,7 @@ export function Panel({ maxHeight, draft, gaps, onClose, onMute, onApply }: Prop
             type="button"
             role="tab"
             aria-selected={tab === id}
-            onClick={() => openTab(id)}
+            onClick={realClick(() => openTab(id))}
             className={`h-9 cursor-pointer border-b-2 text-[13px] ${
               tab === id ? 'border-accent font-medium text-ink' : 'border-transparent text-subtle'
             }`}
@@ -138,7 +149,7 @@ export function Panel({ maxHeight, draft, gaps, onClose, onMute, onApply }: Prop
             )}
           </div>
         ) : (
-          <ImproveView state={improve} draft={draft} onRetry={() => void runImprove()} />
+          <ImproveView state={improve} draft={draft} onRetry={realClick(() => void runImprove())} />
         )}
       </div>
 
@@ -162,7 +173,7 @@ export function Panel({ maxHeight, draft, gaps, onClose, onMute, onApply }: Prop
               <button type="button" onClick={onClose} className={buttonGhost}>
                 Dismiss
               </button>
-              <button type="button" onClick={() => void runImprove()} className={buttonPrimary}>
+              <button type="button" onClick={realClick(() => void runImprove())} className={buttonPrimary}>
                 Improve with AI
               </button>
             </>
@@ -170,7 +181,7 @@ export function Panel({ maxHeight, draft, gaps, onClose, onMute, onApply }: Prop
           {tab === 'improve' && improve.status === 'error' && (
             <>
               {!improve.needsKey && (
-                <button type="button" onClick={() => void runImprove()} className={buttonGhost}>
+                <button type="button" onClick={realClick(() => void runImprove())} className={buttonGhost}>
                   Try again
                 </button>
               )}
@@ -195,7 +206,7 @@ export function Panel({ maxHeight, draft, gaps, onClose, onMute, onApply }: Prop
               >
                 Discard
               </button>
-              <button type="button" onClick={() => onApply(improve.improvement.rewrite)} className={buttonPrimary}>
+              <button type="button" onClick={realClick(() => onApply(improve.improvement.rewrite))} className={buttonPrimary}>
                 Apply to chat
               </button>
             </>
