@@ -2,7 +2,7 @@
 
 Everything both stores ask for, ready to paste. Screenshots are in `store/screenshots/` at 1280×800.
 The package to upload is attached to each GitHub release: `preflight-<version>-firefox.zip` for
-Firefox, `preflight-<version>-chrome.zip` for Edge.
+Firefox, `preflight-<version>-edge.zip` for Edge.
 
 ## Name
 

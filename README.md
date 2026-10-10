@@ -93,10 +93,17 @@ settings follow your device's light or dark theme; the in-page coach follows the
 
 ## Install
 
-1. Download `preflight-<version>-chrome.zip` (Chrome, Brave, Edge) or `preflight-<version>-firefox.zip`
-   from the [latest release](https://github.com/shashwatgoyal-codes/askwell/releases/latest) and unzip it.
-2. **Chrome, Brave or Edge:** open the extensions page (`chrome://extensions`), turn on **Developer mode**,
-   choose **Load unpacked** and pick the unzipped folder.
+1. From the [latest release](https://github.com/shashwatgoyal-codes/askwell/releases/latest), download the
+   zip for your browser and unzip it:
+
+   | Browser | File |
+   |---|---|
+   | Chrome, Brave | `preflight-<version>-chrome.zip` |
+   | Edge | `preflight-<version>-edge.zip` |
+   | Firefox | `preflight-<version>-firefox.zip` |
+
+2. **Chrome, Brave or Edge:** open the extensions page (`chrome://extensions`, `brave://extensions` or
+   `edge://extensions`), turn on **Developer mode**, choose **Load unpacked** and pick the unzipped folder.
    **Firefox:** open `about:debugging` → This Firefox → **Load Temporary Add-on** and pick the
    `manifest.json` inside the folder. Firefox removes temporary add-ons when it restarts; a signed `.xpi`
    is attached to releases when one is available.
@@ -179,7 +186,7 @@ Requires Node 22+ and pnpm.
 pnpm install
 pnpm dev            # Preflight in a fresh Chrome window, reloading on save
 pnpm build          # production build in apps/preflight/dist/chrome-mv3
-pnpm zip            # Chrome and Firefox zips in apps/preflight/dist
+pnpm zip            # Chrome, Edge and Firefox zips in apps/preflight/dist
 pnpm test           # unit tests (Vitest)
 pnpm test:e2e       # builds, then drives Chromium with the extension loaded (Playwright)
 pnpm typecheck

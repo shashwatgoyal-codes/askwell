@@ -33,7 +33,7 @@ gemini.google.com before it is sent.
 ```
 pnpm dev            # Preflight in Chrome with hot reload
 pnpm build          # production builds
-pnpm zip            # Chrome and Firefox zips in apps/preflight/dist
+pnpm zip            # Chrome, Edge and Firefox zips in apps/preflight/dist
 pnpm test           # Vitest
 pnpm test:e2e       # builds, then drives Chromium with the extension loaded (Playwright)
 pnpm typecheck

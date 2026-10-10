@@ -1,6 +1,6 @@
 {
   "name": "@askwell/preflight",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "license": "MIT",
   "private": true,
   "type": "module",
@@ -12,7 +12,7 @@
     "build:firefox": "pnpm notices && wxt build -b firefox --mv3",
     "build:edge": "pnpm notices && wxt build -b edge",
     "build:safari": "pnpm notices && wxt build -b safari",
-    "zip": "pnpm notices && wxt zip && wxt zip -b firefox --mv3",
+    "zip": "pnpm notices && wxt zip && wxt zip -b edge && wxt zip -b firefox --mv3",
     "typecheck": "tsc --noEmit",
     "postinstall": "wxt prepare",
     "test:e2e": "wxt build && playwright test",
