@@ -66,7 +66,7 @@ test('a key is tested and saved, then Improve rewrites and applies', async ({ co
   const panel = page.getByRole('region', { name: 'Preflight' });
   await expect(panel.getByText('Expected: redirect to /dashboard.', { exact: true })).toBeVisible();
   await expect(panel.getByText('Gives the assistant the actual failure.')).toBeVisible();
-  await expect(panel.getByText('claude-opus-5-5 · your key')).toBeVisible();
+  await expect(panel.getByText('claude-opus-5-5', { exact: true })).toBeVisible();
 
   await panel.getByRole('button', { name: 'Apply to chat' }).click();
   await expect(page.locator('#prompt-textarea')).toHaveText(REWRITE);

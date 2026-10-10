@@ -42,8 +42,9 @@ interface Props {
   onApply: (text: string) => void;
 }
 
-const buttonGhost = 'h-9 cursor-pointer rounded-lg border border-edge px-3.5 text-[13px] text-muted hover:bg-raised';
-const buttonPrimary = 'h-9 cursor-pointer rounded-lg bg-accent px-3.5 text-[13px] font-medium text-on-accent disabled:opacity-50';
+const buttonGhost = 'h-9 shrink-0 cursor-pointer whitespace-nowrap rounded-lg border border-edge px-3 text-[13px] text-muted hover:bg-raised';
+const buttonPrimary =
+  'h-9 shrink-0 cursor-pointer whitespace-nowrap rounded-lg bg-accent px-3.5 text-[13px] font-medium text-on-accent disabled:opacity-50';
 
 export function Panel({ maxHeight, draft, gaps, onClose, onMute, onApply }: Props) {
   const [tab, setTab] = useState<'gaps' | 'improve' | 'library'>('gaps');
@@ -80,7 +81,7 @@ export function Panel({ maxHeight, draft, gaps, onClose, onMute, onApply }: Prop
       aria-label="Preflight"
       onKeyDown={(event) => event.key === 'Escape' && onClose()}
       style={{ maxHeight }}
-      className="flex w-[440px] flex-col overflow-hidden rounded-[14px] border border-edge bg-surface shadow-[0_24px_60px_rgba(0,0,0,0.35)]"
+      className="flex w-[468px] max-w-[calc(100vw-24px)] flex-col overflow-hidden rounded-[14px] border border-edge bg-surface shadow-[0_24px_60px_rgba(0,0,0,0.35)]"
     >
       <header className="flex shrink-0 items-center justify-between py-3 pr-3 pl-4">
         <div className="flex items-center gap-2.5">
@@ -163,10 +164,12 @@ export function Panel({ maxHeight, draft, gaps, onClose, onMute, onApply }: Prop
         )}
       </div>
 
-      <footer className="flex shrink-0 items-center justify-between border-t border-edge bg-canvas/40 px-4 py-3">
-        <span className="flex items-center gap-1.5 font-mono text-[11px] text-subtle">
+      <footer className="flex shrink-0 items-center justify-between gap-3 border-t border-edge bg-canvas/40 px-4 py-3">
+        <span className="flex min-w-0 items-center gap-1.5 overflow-hidden font-mono text-[11px] text-subtle">
           {tab === 'improve' && improve.status === 'done' ? (
-            `${improve.model} · your key`
+            <span className="truncate" title={`Rewritten with ${improve.model}`}>
+              {improve.model}
+            </span>
           ) : (
             <>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -177,7 +180,7 @@ export function Panel({ maxHeight, draft, gaps, onClose, onMute, onApply }: Prop
             </>
           )}
         </span>
-        <div className="flex gap-2">
+        <div className="flex shrink-0 gap-2">
           {tab === 'gaps' && (
             <>
               <button type="button" onClick={onClose} className={buttonGhost}>
