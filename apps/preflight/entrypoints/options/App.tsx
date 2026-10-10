@@ -13,6 +13,10 @@ export function App() {
         <h1 className="text-[40px] leading-tight font-medium tracking-tight">
           Settings. <span className="text-[#6b6b73]">All of it stays in this browser.</span>
         </h1>
+        <p className="border-t border-edge pt-6 text-[12.5px] leading-relaxed text-subtle">
+          Preflight is not affiliated with, endorsed by or sponsored by OpenAI, Anthropic or Google.
+          It never sends a message for you.
+        </p>
       </main>
     </div>
   );

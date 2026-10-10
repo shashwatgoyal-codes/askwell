@@ -1,6 +1,7 @@
 {
   "name": "@askwell/preflight",
   "version": "0.1.0",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "description": "Checks your AI prompt before you send it.",
