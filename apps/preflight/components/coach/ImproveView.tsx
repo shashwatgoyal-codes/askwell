@@ -82,13 +82,13 @@ export function ImproveView({ state, draft, onRetry }: Props) {
     <div>
       <div className="flex flex-col gap-1.5 px-4 pt-4">
         <span className="font-mono text-[11px] tracking-[0.08em] text-subtle">BEFORE</span>
-        <p className="max-h-24 overflow-auto text-sm leading-relaxed whitespace-pre-wrap text-subtle line-through">
+        <p className="text-sm leading-relaxed whitespace-pre-wrap text-subtle line-through">
           {state.draft}
         </p>
       </div>
       <div className="flex flex-col gap-1.5 px-4 pt-3.5 pb-4">
         <span className="font-mono text-[11px] tracking-[0.08em] text-subtle">AFTER</span>
-        <p className="max-h-48 overflow-auto text-sm leading-[1.75] whitespace-pre-wrap">
+        <p className="text-sm leading-[1.75] whitespace-pre-wrap">
           {runs.map((run, i) =>
             run.added ? (
               <mark key={i} className="rounded-[3px] border-b-[1.5px] border-accent bg-wash px-0.5 text-ink">

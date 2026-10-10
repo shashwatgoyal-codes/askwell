@@ -16,6 +16,8 @@ const LABELS: Record<CheckId, string> = {
 const SHOWN = 2;
 
 interface Props {
+  /** The panel never grows past this; the list between header and footer scrolls instead. */
+  maxHeight: number;
   draft: string;
   gaps: Gap[];
   onClose: () => void;
@@ -26,7 +28,7 @@ interface Props {
 const buttonGhost = 'h-9 cursor-pointer rounded-lg border border-edge px-3.5 text-[13px] text-muted hover:bg-raised';
 const buttonPrimary = 'h-9 cursor-pointer rounded-lg bg-accent px-3.5 text-[13px] font-medium text-on-accent disabled:opacity-50';
 
-export function Panel({ draft, gaps, onClose, onMute, onApply }: Props) {
+export function Panel({ maxHeight, draft, gaps, onClose, onMute, onApply }: Props) {
   const [tab, setTab] = useState<'gaps' | 'improve'>('gaps');
   const [showAll, setShowAll] = useState(false);
   const [improve, setImprove] = useState<ImproveState>({ status: 'idle' });
@@ -58,9 +60,10 @@ export function Panel({ draft, gaps, onClose, onMute, onApply }: Props) {
     <section
       aria-label="Preflight"
       onKeyDown={(event) => event.key === 'Escape' && onClose()}
-      className="w-[440px] overflow-hidden rounded-[14px] border border-edge bg-surface shadow-[0_24px_60px_rgba(0,0,0,0.35)]"
+      style={{ maxHeight }}
+      className="flex w-[440px] flex-col overflow-hidden rounded-[14px] border border-edge bg-surface shadow-[0_24px_60px_rgba(0,0,0,0.35)]"
     >
-      <header className="flex items-center justify-between py-3 pr-3 pl-4">
+      <header className="flex shrink-0 items-center justify-between py-3 pr-3 pl-4">
         <div className="flex items-center gap-2.5">
           <Mark size={22} />
           <span className="text-sm font-medium">Preflight</span>
@@ -82,7 +85,7 @@ export function Panel({ draft, gaps, onClose, onMute, onApply }: Props) {
         </button>
       </header>
 
-      <div role="tablist" className="flex gap-5 border-b border-edge px-4">
+      <div role="tablist" className="flex shrink-0 gap-5 border-b border-edge px-4">
         {(['gaps', 'improve'] as const).map((id) => (
           <button
             key={id}
@@ -99,44 +102,47 @@ export function Panel({ draft, gaps, onClose, onMute, onApply }: Props) {
         ))}
       </div>
 
-      {tab === 'gaps' ? (
-        <div>
-          {gaps.length === 0 && (
-            <p className="p-4 text-sm text-muted">Nothing missing. This prompt says what it needs to.</p>
-          )}
-          {visible.map((gap, i) => (
-            <article key={gap.id} className="flex flex-col gap-2 border-edge p-4 [&+&]:border-t">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-[11px] tracking-[0.08em] text-subtle uppercase">
-                  {String(i + 1).padStart(2, '0')} · {LABELS[gap.id]}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => onMute(gap.id)}
-                  className="cursor-pointer rounded px-1.5 py-1 text-xs text-subtle hover:bg-raised"
-                >
-                  Mute
-                </button>
-              </div>
-              <p className="text-sm leading-normal">{gap.message}</p>
-              <p className="text-[13px] leading-normal text-muted">{gap.hint}</p>
-            </article>
-          ))}
-          {!showAll && gaps.length > SHOWN && (
-            <button
-              type="button"
-              onClick={() => setShowAll(true)}
-              className="w-full cursor-pointer border-t border-edge py-2.5 text-[13px] text-muted hover:bg-raised"
-            >
-              Show {gaps.length - SHOWN} more
-            </button>
-          )}
-        </div>
-      ) : (
-        <ImproveView state={improve} draft={draft} onRetry={() => void runImprove()} />
-      )}
+      {/* Only this part scrolls; header, tabs and buttons stay in place. */}
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        {tab === 'gaps' ? (
+          <div>
+            {gaps.length === 0 && (
+              <p className="p-4 text-sm text-muted">Nothing missing. This prompt says what it needs to.</p>
+            )}
+            {visible.map((gap, i) => (
+              <article key={gap.id} className="flex flex-col gap-2 border-edge p-4 [&+&]:border-t">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[11px] tracking-[0.08em] text-subtle uppercase">
+                    {String(i + 1).padStart(2, '0')} · {LABELS[gap.id]}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onMute(gap.id)}
+                    className="cursor-pointer rounded px-1.5 py-1 text-xs text-subtle hover:bg-raised"
+                  >
+                    Mute
+                  </button>
+                </div>
+                <p className="text-sm leading-normal">{gap.message}</p>
+                <p className="text-[13px] leading-normal text-muted">{gap.hint}</p>
+              </article>
+            ))}
+            {!showAll && gaps.length > SHOWN && (
+              <button
+                type="button"
+                onClick={() => setShowAll(true)}
+                className="w-full cursor-pointer border-t border-edge py-2.5 text-[13px] text-muted hover:bg-raised"
+              >
+                Show {gaps.length - SHOWN} more
+              </button>
+            )}
+          </div>
+        ) : (
+          <ImproveView state={improve} draft={draft} onRetry={() => void runImprove()} />
+        )}
+      </div>
 
-      <footer className="flex items-center justify-between border-t border-edge bg-canvas/40 px-4 py-3">
+      <footer className="flex shrink-0 items-center justify-between border-t border-edge bg-canvas/40 px-4 py-3">
         <span className="flex items-center gap-1.5 font-mono text-[11px] text-subtle">
           {tab === 'improve' && improve.status === 'done' ? (
             `${improve.model} · your key`

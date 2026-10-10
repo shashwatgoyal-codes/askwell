@@ -166,7 +166,7 @@ function ProviderSection() {
       </p>
       <Segmented label="Provider" value={chosen} options={PROVIDERS} onChange={(id) => void providerItem.setValue(id)} />
       <div className="flex flex-col gap-2">
-        <label htmlFor={keyId} className="text-[13px] text-[#d4d4d8]">
+        <label htmlFor={keyId} className="text-[13px] text-label">
           {name} API key
         </label>
         <div className="flex gap-2">
@@ -188,7 +188,7 @@ function ProviderSection() {
         <div className="flex items-center justify-between gap-4 text-[12.5px]">
           <span className="text-subtle">Stored in this browser only. Calls go straight to {name}, never through us.</span>
           {status.kind === 'ok' && <span className="shrink-0 font-mono text-xs text-ink">✓ {status.text}</span>}
-          {status.kind === 'error' && <span className="shrink-0 text-xs text-[#ff9a9f]">{status.text}</span>}
+          {status.kind === 'error' && <span className="shrink-0 text-xs text-danger">{status.text}</span>}
           {status.kind === 'idle' && keys[chosen] && (
             <button type="button" onClick={() => void remove()} className="shrink-0 cursor-pointer text-xs text-subtle hover:text-ink">
               Remove key
@@ -197,7 +197,7 @@ function ProviderSection() {
         </div>
       </div>
       <div className="flex flex-col gap-2">
-        <label htmlFor={modelId} className="text-[13px] text-[#d4d4d8]">
+        <label htmlFor={modelId} className="text-[13px] text-label">
           Model for Improve
         </label>
         <select
@@ -222,7 +222,7 @@ function ProviderSection() {
         {modelStatus.kind === 'ok' && <span className="font-mono text-xs text-ink">✓ {modelStatus.model} answers this key</span>}
         {modelStatus.kind === 'error' && (
           <div className="flex flex-col gap-1.5">
-            <span className="text-xs text-[#ff9a9f]">{modelStatus.text}</span>
+            <span className="text-xs text-danger">{modelStatus.text}</span>
             {modelStatus.detail && (
               <span className="rounded-lg border border-edge bg-surface px-2.5 py-2 font-mono text-[11.5px] break-words text-subtle">
                 {modelStatus.detail}
@@ -249,7 +249,7 @@ function ChecksSection() {
   return (
     <Section number="02" label="CHECKS">
       <div className="flex items-center justify-between">
-        <span className="text-[13px] text-[#d4d4d8]">Sensitivity</span>
+        <span className="text-[13px] text-label">Sensitivity</span>
         <Segmented
           label="Sensitivity"
           value={level}
@@ -304,7 +304,7 @@ function DangerSection() {
   const [confirming, setConfirming] = useState(false);
   return (
     <Section number="03" label="DANGER ZONE">
-      <div className="flex items-center justify-between gap-6 rounded-xl border border-[#3a2326] p-4">
+      <div className="flex items-center justify-between gap-6 rounded-xl border border-danger-edge p-4">
         <div className="flex flex-col gap-0.5">
           <span className="text-sm">Clear local data</span>
           <span className="text-[12.5px] text-subtle">Removes your keys and settings from this browser. This can’t be undone.</span>
@@ -316,7 +316,7 @@ function DangerSection() {
             void clearAll().then(() => setConfirming(false));
           }}
           onBlur={() => setConfirming(false)}
-          className="h-[38px] shrink-0 cursor-pointer rounded-lg border border-[#7a2e33] px-4 text-[13px] text-[#ff9a9f] hover:bg-[#2a1517]"
+          className="h-[38px] shrink-0 cursor-pointer rounded-lg border border-danger-strong px-4 text-[13px] text-danger hover:bg-danger-wash"
         >
           {confirming ? 'Click again to clear' : 'Clear data'}
         </button>
@@ -339,7 +339,7 @@ export function App() {
       </header>
       <main className="mx-auto flex w-full max-w-[680px] flex-col gap-12 px-4 pt-14 pb-16">
         <h1 className="text-[40px] leading-tight font-medium tracking-tight">
-          Settings. <span className="text-[#6b6b73]">All of it stays in this browser.</span>
+          Settings. <span className="text-faint">All of it stays in this browser.</span>
         </h1>
         <ProviderSection />
         <ChecksSection />

@@ -14,7 +14,13 @@ interface Anchor {
   right: number;
   bottom: number;
   width: number;
+  /** Height the panel may use above the badge without leaving the window. */
+  room: number;
 }
+
+/** Badge height plus the gap above it, and a margin from the window's top. */
+const BADGE_AND_GAP = 40;
+const TOP_MARGIN = 16;
 
 function useSetting<T>(item: { getValue(): Promise<T>; watch(cb: (v: T) => void): () => void }, initial: T): T {
   const [value, setValue] = useState(initial);
@@ -58,9 +64,12 @@ export function Coach({ site }: { site: Site }) {
         right: Math.round(innerWidth - rect.right),
         bottom: Math.round(innerHeight - rect.top + 10),
         width: Math.round(Math.min(Math.max(box.width, 420), 680)),
+        room: Math.max(180, Math.round(rect.top - 10 - BADGE_AND_GAP - TOP_MARGIN)),
       };
       setAnchor((prev) =>
-        prev && prev.right === next.right && prev.bottom === next.bottom && prev.width === next.width ? prev : next,
+        prev && prev.right === next.right && prev.bottom === next.bottom && prev.width === next.width && prev.room === next.room
+          ? prev
+          : next,
       );
       setText(readText(el));
       setDark(isDarkBehind(el));
@@ -138,6 +147,7 @@ export function Coach({ site }: { site: Site }) {
     >
       {open && (
         <Panel
+          maxHeight={anchor.room}
           draft={text}
           gaps={gaps}
           onClose={() => setOpen(false)}

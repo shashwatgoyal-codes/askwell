@@ -14,11 +14,23 @@
   --color-accent: #ff6b4a;
   --color-on-accent: #140803;
   --color-wash: rgb(255 107 74 / 0.14);
+  --color-label: #d4d4d8;
+  --color-faint: #6b6b73;
+  --color-danger: #ff9a9f;
+  --color-danger-edge: #3a2326;
+  --color-danger-strong: #7a2e33;
+  --color-danger-wash: #2a1517;
+}
+
+:root {
+  color-scheme: dark;
 }
 
 /* Utilities read the tokens through var(), so a light scope only has to
-   redefine them. The in-page coach switches scope to match the host site. */
+   redefine them. The in-page coach switches scope to match the host site;
+   the popup and settings page switch it to follow the device. */
 .pf-light {
+  color-scheme: light;
   --color-canvas: #fafaf9;
   --color-surface: #ffffff;
   --color-raised: #f4f4f5;
@@ -29,4 +41,10 @@
   --color-accent: #d2401f;
   --color-on-accent: #ffffff;
   --color-wash: rgb(210 64 31 / 0.1);
+  --color-label: #3f3f46;
+  --color-faint: #82828b;
+  --color-danger: #b42318;
+  --color-danger-edge: #f3d0cc;
+  --color-danger-strong: #e4a29b;
+  --color-danger-wash: #fdf0ee;
 }
