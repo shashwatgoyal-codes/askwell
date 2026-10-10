@@ -1,16 +1,38 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { clearFailures, isLocked, recordFailure } from '@/lib/attempts';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
-import { endSession, isAdmin, passwordMatches, startSession } from '@/lib/session';
+import { credentialsMatch, endSession, isAdmin, startSession } from '@/lib/session';
 import { createToken, revokeToken } from '@/lib/tokens';
 
-export async function login(_: string | null, form: FormData): Promise<string | null> {
-  // A short pause on every attempt makes guessing the password slow.
+/** Who is trying to sign in, for the lockout: the client IP as the host reports it. */
+async function source(): Promise<string> {
+  const h = await headers();
+  return h.get('x-forwarded-for')?.split(',')[0]?.trim() || h.get('x-real-ip') || 'local';
+}
+
+export type LoginState = { error: string; email: string } | null;
+
+export async function login(_: LoginState, form: FormData): Promise<LoginState> {
+  // A short pause on every attempt slows guessing even before the lockout.
   await new Promise((resolve) => setTimeout(resolve, 600));
-  if (!passwordMatches(String(form.get('password') ?? ''))) return 'That password is not right.';
+  const db = await getDb();
+  const from = await source();
+  const email = String(form.get('email') ?? '');
+  // The email is handed back so the form keeps it; the password never is.
+  if (await isLocked(db, from)) {
+    return { error: 'Too many attempts. Sign-in is paused for a while; try again later.', email };
+  }
+  if (!credentialsMatch(email, String(form.get('password') ?? ''))) {
+    await recordFailure(db, from);
+    // Never say which of the two was wrong.
+    return { error: 'Email or password is not right.', email };
+  }
+  await clearFailures(db, from);
   await startSession();
   redirect('/');
 }

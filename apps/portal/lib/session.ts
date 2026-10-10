@@ -2,7 +2,7 @@ import { createHash, timingSafeEqual } from 'node:crypto';
 import { jwtVerify, SignJWT } from 'jose';
 import { cookies } from 'next/headers';
 
-// One admin: whoever knows ADMIN_PASSWORD. The session is a signed cookie;
+// One admin: whoever knows ADMIN_EMAIL and ADMIN_PASSWORD. The session is a signed cookie;
 // nothing about it is stored.
 
 const COOKIE = 'askwell_admin';
@@ -14,12 +14,22 @@ function secret(): Uint8Array {
   return new TextEncoder().encode(value);
 }
 
-/** Constant-time, and compares hashes so the lengths always match. */
-export function passwordMatches(given: string, expected = process.env.ADMIN_PASSWORD ?? ''): boolean {
-  if (!expected) return false;
-  const a = createHash('sha256').update(given).digest();
-  const b = createHash('sha256').update(expected).digest();
-  return timingSafeEqual(a, b);
+const digest = (value: string) => createHash('sha256').update(value).digest();
+
+/**
+ * Both must match. Constant-time, and compares hashes so lengths always
+ * match; the email is compared case-insensitively. Both comparisons always
+ * run, so timing doesn't reveal which one failed.
+ */
+export function credentialsMatch(
+  email: string,
+  password: string,
+  expected = { email: process.env.ADMIN_EMAIL ?? '', password: process.env.ADMIN_PASSWORD ?? '' },
+): boolean {
+  if (!expected.email || !expected.password) return false;
+  const emailOk = timingSafeEqual(digest(email.trim().toLowerCase()), digest(expected.email.trim().toLowerCase()));
+  const passwordOk = timingSafeEqual(digest(password), digest(expected.password));
+  return emailOk && passwordOk;
 }
 
 export async function startSession(): Promise<void> {

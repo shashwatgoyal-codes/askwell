@@ -18,6 +18,11 @@ create table if not exists tokens (
   revoked_at timestamptz,
   last_used_at timestamptz
 );
+create table if not exists login_failures (
+  source text not null,
+  at timestamptz not null default now()
+);
+create index if not exists login_failures_at on login_failures (at);
 create table if not exists usage (
   token_id text not null references tokens(id) on delete cascade,
   day date not null,
