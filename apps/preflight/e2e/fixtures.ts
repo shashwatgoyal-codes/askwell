@@ -21,6 +21,14 @@ const PAGES: Record<string, string> = {
     'now this: PrismaClientKnownRequestError P2025 at updateSession',
   ]),
   'https://chatgpt.com/': chatgpt(),
+  // A redesign none of the known selectors match: no id, plain textarea.
+  'https://chatgpt.com/redesigned': `<!doctype html><html><body style="margin:0;background:#212121;color:#ececec;font-family:sans-serif">
+    <main style="height:100vh;display:flex;flex-direction:column;justify-content:flex-end;padding:0 15%">
+      <input type="search" placeholder="Search chats" style="position:absolute;top:10px;left:10px;width:400px">
+      <div class="composer-v9" style="margin-bottom:32px;background:#303030;border-radius:24px;padding:16px">
+        <textarea class="prompt-v9" rows="2" style="width:100%;background:transparent;color:inherit;border:0;outline:none;font:inherit"></textarea>
+      </div>
+    </main></body></html>`,
   'https://gemini.google.com/app': `<!doctype html><html><body style="margin:0;background:#ffffff;color:#1f1f1f;font-family:sans-serif">
     <main style="height:100vh;display:flex;flex-direction:column;justify-content:flex-end;padding:0 15%">
       <rich-textarea style="display:block;margin-bottom:32px;border:1px solid #ddd;border-radius:24px;padding:16px">

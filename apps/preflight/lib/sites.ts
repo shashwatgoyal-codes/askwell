@@ -46,6 +46,24 @@ function isVisible(el: HTMLElement): boolean {
   return rect.width > 80 && rect.height > 10 && getComputedStyle(el).visibility !== 'hidden';
 }
 
+/** The editable root holding the focus: a textarea or a contenteditable editor. */
+function focusedEditor(): HTMLElement | null {
+  const active = document.activeElement;
+  if (active instanceof HTMLTextAreaElement) return active;
+  if (!(active instanceof HTMLElement) || !active.isContentEditable) return null;
+  let root = active;
+  while (root.parentElement?.isContentEditable) root = root.parentElement;
+  return root;
+}
+
+/**
+ * Chat sites redesign their prompt box often, and signed-in pages can differ
+ * from what is publicly visible. Known selectors come first; when none
+ * matches, the box being typed in is the prompt box. Inputs are ignored:
+ * search fields are inputs, prompt boxes never are.
+ */
+const MIN_PROMPT_BOX_WIDTH = 240;
+
 export function findComposer(site: Site): HTMLElement | null {
   for (const selector of site.selectors) {
     const matches = [...document.querySelectorAll<HTMLElement>(selector)].filter(isVisible);
@@ -53,8 +71,16 @@ export function findComposer(site: Site): HTMLElement | null {
     if (focused) return focused;
     if (matches.length) return matches[matches.length - 1]!;
   }
-  return null;
+  const typing = focusedEditor();
+  if (typing && isVisible(typing) && typing.getBoundingClientRect().width >= MIN_PROMPT_BOX_WIDTH) {
+    lastTyped = typing;
+    return typing;
+  }
+  // Keep following the box after focus moves to the panel or elsewhere.
+  return lastTyped?.isConnected && isVisible(lastTyped) ? lastTyped : null;
 }
+
+let lastTyped: HTMLElement | null = null;
 
 /** The last `limit` messages the person sent in this chat, oldest first. Read only from the page; never stored. */
 export function readUserMessages(site: Site, limit = 12): string[] {

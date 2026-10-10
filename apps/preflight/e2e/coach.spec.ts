@@ -69,3 +69,19 @@ test.describe('on Gemini', () => {
     await expect(page.locator('preflight-coach .pf-light')).toHaveCount(1);
   });
 });
+
+test('a redesigned prompt box no selector knows is still found once you type in it', async ({ site }) => {
+  const page = await site('https://chatgpt.com/redesigned');
+  // A search field is never taken for the prompt box.
+  await page.getByPlaceholder('Search chats').click();
+  await page.keyboard.type('fix the login bug, same as before');
+  await expect(page.getByRole('button', { name: /^Preflight/ })).toHaveCount(0);
+
+  await page.locator('textarea.prompt-v9').click();
+  await page.keyboard.type('fix the login bug, same as before');
+  const badge = page.getByRole('button', { name: 'Preflight: 3 gaps in this prompt' });
+  await expect(badge).toBeVisible();
+  // Clicking the badge moves focus away from the box; the coach keeps following it.
+  await badge.click();
+  await expect(page.getByRole('region', { name: 'Preflight' })).toBeVisible();
+});
