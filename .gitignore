@@ -8,3 +8,5 @@ node_modules/
 !.env.example
 *.pem
 web-ext-artifacts/
+test-results/
+playwright-report/

@@ -14,7 +14,8 @@
     "build:safari": "wxt build -b safari",
     "zip": "wxt zip && wxt zip -b firefox --mv3",
     "typecheck": "tsc --noEmit",
-    "postinstall": "wxt prepare"
+    "postinstall": "wxt prepare",
+    "test:e2e": "wxt build && playwright test"
   },
   "dependencies": {
     "@askwell/rules": "workspace:*",
@@ -22,6 +23,7 @@
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.0",
     "@tailwindcss/vite": "^4.3.3",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",

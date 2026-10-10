@@ -37,7 +37,7 @@ const ASSUMED_MEMORY = [
 ];
 
 const GOAL =
-  /\b(expect(ed|ing)?|should|so that|so it|instead( of)?|want(ed)? (it|this|to)|needs? to|supposed to|must|goal|result|outcome|until|make sure|to be able)\b|→|->/i;
+  /\b(expect(ed|ing)?|should|so that|so it|instead( of)?|want(ed)? (it|this|to)|needs? to|supposed to|must|goal|result|outcome|until|make sure|to be (able|\w+(er|able|ible|less))|into)\b|→|->/i;
 
 const CONSTRAINT =
   /\b(don['’]?t|do not|without|keep|only|must not|mustn['’]?t|avoid|preserve|leave|unchanged|no (new )?(dependencies|deps|libraries|packages)|stick to|backwards? compatible)\b|\b(node|react|next(\.js)?|python|typescript|java|go|postgres(ql)?|prisma)\s*v?\d+(\.\d+)*\b/i;

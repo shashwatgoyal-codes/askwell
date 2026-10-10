@@ -114,6 +114,8 @@ describe('goal', () => {
     'checkout is broken on Safari; it should show the payment step',
     'fix the redirect: expected /dashboard, got /login',
     'refactor the auth module so that each provider is its own file',
+    'refactor this parser to be readable',
+    'split the dashboard query into two smaller ones',
   ])('accepts a stated result: %j', (prompt) => {
     expect(ids(prompt)).not.toContain('goal');
   });

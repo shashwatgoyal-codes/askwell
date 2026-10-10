@@ -1,0 +1,32 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-canvas: #0b0b0c;
+  --color-surface: #131315;
+  --color-raised: #1c1c1f;
+  --color-edge: #26262b;
+  --color-ink: #ededef;
+  --color-muted: #a1a1aa;
+  --color-subtle: #8a8a93;
+  --color-accent: #ff6b4a;
+  --color-on-accent: #140803;
+  --color-wash: rgb(255 107 74 / 0.14);
+}
+
+/* Utilities read the tokens through var(), so a light scope only has to
+   redefine them. The in-page coach switches scope to match the host site. */
+.pf-light {
+  --color-canvas: #fafaf9;
+  --color-surface: #ffffff;
+  --color-raised: #f4f4f5;
+  --color-edge: #e4e4e7;
+  --color-ink: #18181b;
+  --color-muted: #52525b;
+  --color-subtle: #71717a;
+  --color-accent: #d2401f;
+  --color-on-accent: #ffffff;
+  --color-wash: rgb(210 64 31 / 0.1);
+}

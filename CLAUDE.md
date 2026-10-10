@@ -7,6 +7,9 @@ gemini.google.com before it is sent.
 ## Layout
 
 - `apps/preflight` — the WXT extension (React, TypeScript, Tailwind v4).
+- `apps/preflight/lib/sites.ts` — where each chat site keeps its prompt box. When a site redesigns,
+  this is the file to fix. The e2e tests serve stand-in pages at the real URLs, so they prove the
+  extension works but not that a live site's markup still matches.
 - `packages/rules` — the prompt checks. Plain TypeScript with no browser APIs, so the extension and a
   future Claude Code hook can share them. Every check gets tests.
 
@@ -17,6 +20,7 @@ pnpm dev            # Preflight in Chrome with hot reload
 pnpm build          # production builds
 pnpm zip            # Chrome and Firefox zips in apps/preflight/.output
 pnpm test           # Vitest
+pnpm test:e2e       # builds, then drives Chromium with the extension loaded (Playwright)
 pnpm typecheck
 ```
 
