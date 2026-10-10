@@ -1,0 +1,33 @@
+# Askwell
+
+Browser extensions for asking AI well, published under one developer name: Shashwat Goyal.
+The first product is **Preflight** (`apps/preflight`). It checks a prompt on claude.ai, chatgpt.com and
+gemini.google.com before it is sent.
+
+## Layout
+
+- `apps/preflight` — the WXT extension (React, TypeScript, Tailwind v4).
+- `packages/rules` — the prompt checks. Plain TypeScript with no browser APIs, so the extension and a
+  future Claude Code hook can share them. Every check gets tests.
+
+## Commands
+
+```
+pnpm dev            # Preflight in Chrome with hot reload
+pnpm build          # production builds
+pnpm zip            # Chrome and Firefox zips in apps/preflight/.output
+pnpm test           # Vitest
+pnpm typecheck
+```
+
+## Rules
+
+- **One author.** Commit as `Shashwat Goyal <shashwatgoyaloffice@gmail.com>`. Never add
+  `Co-Authored-By` lines for Claude or a "Generated with Claude Code" line; the `commit-msg` hook in
+  `.githooks/` refuses them. Commit and push only when asked; pushes use Shashwat's own credentials.
+- **Bring your own key.** A user's API key stays in `storage.local` in the extension and goes only to
+  the provider. It never reaches a server of ours and is never logged.
+- **Checks run locally.** Nothing leaves the browser unless the user clicks Improve or Summary.
+- **No store publishing.** Builds are loaded unpacked; Firefox uses unlisted signing.
+- **Design:** neutral near-black, one coral accent (`#FF6B4A` dark / `#D2401F` light), Geist and Geist
+  Mono, hairline borders. The mockups are on the design canvas.

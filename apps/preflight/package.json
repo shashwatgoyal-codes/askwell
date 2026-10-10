@@ -1,0 +1,33 @@
+{
+  "name": "@askwell/preflight",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Checks your AI prompt before you send it.",
+  "scripts": {
+    "dev": "wxt",
+    "dev:firefox": "wxt -b firefox",
+    "build": "wxt build",
+    "build:firefox": "wxt build -b firefox --mv3",
+    "build:edge": "wxt build -b edge",
+    "build:safari": "wxt build -b safari",
+    "zip": "wxt zip && wxt zip -b firefox --mv3",
+    "typecheck": "tsc --noEmit",
+    "postinstall": "wxt prepare"
+  },
+  "dependencies": {
+    "@askwell/rules": "workspace:*",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@wxt-dev/auto-icons": "^1.1.2",
+    "@wxt-dev/module-react": "^1.2.2",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^6.0.3",
+    "wxt": "^0.21.4"
+  }
+}
