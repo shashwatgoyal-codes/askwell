@@ -1,0 +1,22 @@
+{
+  "name": "@askwell/claude-hook",
+  "version": "0.1.0",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "description": "Preflight's prompt checks as a Claude Code UserPromptSubmit hook.",
+  "scripts": {
+    "build": "esbuild src/cli.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist/preflight-hook.mjs --banner:js=\"#!/usr/bin/env node\"",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@askwell/rules": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "esbuild": "^0.28.2",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.3"
+  }
+}

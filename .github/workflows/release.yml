@@ -43,6 +43,7 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm zip
+      - run: pnpm --filter @askwell/claude-hook build
 
       - name: Sign the Firefox build (unlisted)
         if: ${{ env.AMO_JWT_ISSUER != '' }}
@@ -59,7 +60,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           shopt -s nullglob
-          files=(apps/preflight/dist/*.zip apps/preflight/dist/signed/*.xpi)
+          files=(apps/preflight/dist/*.zip apps/preflight/dist/signed/*.xpi packages/claude-hook/dist/preflight-hook.mjs)
           gh release create "$GITHUB_REF_NAME" "${files[@]}" \
             --title "Preflight ${GITHUB_REF_NAME#preflight-v}" \
             --generate-notes

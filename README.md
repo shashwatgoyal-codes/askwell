@@ -97,6 +97,35 @@ The checks work without any key. To use **Improve**, open Preflight's settings a
 Each Improve is one short request, billed by the provider to your key. Setting a monthly spend limit in
 the provider's dashboard is a good idea.
 
+## In Claude Code
+
+The same checks can run on every prompt you type in [Claude Code](https://code.claude.com), as a
+`UserPromptSubmit` hook. It warns you in the terminal and lets the prompt through; nothing is added to
+Claude's context. In block mode it stops a prompt with gaps until you edit it, or add `#go` to send it
+as is. Slash commands, `!` shell commands and `#` memory notes are never checked.
+
+1. Download `preflight-hook.mjs` from the [latest release](https://github.com/shashwatgoyal-codes/askwell/releases/latest)
+   (or build it with `pnpm --filter @askwell/claude-hook build`) and put it in `~/.claude/hooks/`.
+2. Add this to `~/.claude/settings.json` (merge it with any `hooks` you already have):
+
+```json
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          { "type": "command", "command": "node \"$HOME/.claude/hooks/preflight-hook.mjs\"", "timeout": 5 }
+        ]
+      }
+    ]
+  }
+}
+```
+
+For block mode put `PREFLIGHT_MODE=block ` before `node`; for other sensitivities set
+`PREFLIGHT_SENSITIVITY=relaxed` or `strict`. It reads the session's own transcript for the
+"third error in a row" kind of nudge, and needs Node 20 or later.
+
 ## Privacy
 
 - The checks run inside your browser. Preflight has no server, no account and no analytics.
@@ -141,6 +170,7 @@ apps/preflight/          the extension (WXT, React, TypeScript, Tailwind)
   lib/improve/           provider calls and the JSON contract every provider meets
   e2e/                   browser tests, run against stand-in pages at the real URLs
 packages/rules/          the checks: plain TypeScript, no browser APIs, fully tested
+packages/claude-hook/    the same checks as a Claude Code hook, bundled to one file
 docs/                    logo files and README images
 ```
 
