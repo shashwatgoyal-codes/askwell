@@ -55,6 +55,7 @@ test('a key is tested and saved, then Improve rewrites and applies', async ({ co
   await settings.getByRole('button', { name: 'Test and save' }).click();
   await expect(settings.getByText('Key works · 1 model available')).toBeVisible();
   await expect(settings.getByLabel('Model for Improve')).toHaveValue('claude-opus-5-5');
+  await expect(settings.getByText('✓ claude-opus-5-5 answers this key')).toBeVisible();
 
   const page = await site('https://chatgpt.com/');
   await page.locator('#prompt-textarea').click();
@@ -72,7 +73,8 @@ test('a key is tested and saved, then Improve rewrites and applies', async ({ co
   await expect(panel).toBeHidden();
 
   // The request went to Anthropic only, with the user's key and the shape we promised.
-  const call = seen.find((s) => new URL(s.url).pathname === '/v1/messages');
+  // The settings probe also posts to /v1/messages; the rewrite is the one with a JSON format.
+  const call = seen.find((s) => new URL(s.url).pathname === '/v1/messages' && s.body?.includes('output_config'));
   expect(call?.headers['x-api-key']).toBe('sk-ant-test-not-real');
   const body = JSON.parse(call!.body!);
   expect(body.model).toBe('claude-opus-5-5');
@@ -100,7 +102,9 @@ test('Gemini: only text models are offered, stable Flash first, and a 404 says w
       return route.fulfill({
         status: 404,
         contentType: 'application/json',
-        body: JSON.stringify({ error: { code: 404, message: 'models/x is not found', status: 'NOT_FOUND' } }),
+        body: JSON.stringify({
+          error: { code: 404, message: 'models/gemini-9.0-flash is not found for API version v1beta', status: 'NOT_FOUND' },
+        }),
       });
     }
     const model = (name: string) => ({ name: `models/${name}`, supportedGenerationMethods: ['generateContent', 'countTokens'] });
@@ -129,6 +133,9 @@ test('Gemini: only text models are offered, stable Flash first, and a 404 says w
   const options = await settings.getByLabel('Model for Improve').locator('option').allTextContents();
   expect(options).toEqual(['gemini-9.0-flash', 'gemini-9.0-flash-lite', 'gemini-8.5-pro', 'gemini-9.0-pro-preview']);
   await expect(settings.getByLabel('Model for Improve')).toHaveValue('gemini-9.0-flash');
+  // Settings tries the model straight away and shows Google's own reason.
+  await expect(settings.getByText('Gemini won’t serve gemini-9.0-flash to this key. Try another model above.')).toBeVisible();
+  await expect(settings.getByText('models/gemini-9.0-flash is not found for API version v1beta')).toBeVisible();
 
   const page = await site('https://gemini.google.com/app');
   await page.locator('rich-textarea .ql-editor').click();
@@ -136,6 +143,7 @@ test('Gemini: only text models are offered, stable Flash first, and a 404 says w
   await page.getByRole('button', { name: /^Preflight: \d gaps/ }).click();
   await page.getByRole('button', { name: 'Improve with AI' }).click();
   const panel = page.getByRole('region', { name: 'Preflight' });
-  await expect(panel.getByText('Gemini doesn’t serve gemini-9.0-flash to this key. Pick another model in settings.')).toBeVisible();
+  await expect(panel.getByText('Gemini won’t serve gemini-9.0-flash to this key. Pick another model in settings.')).toBeVisible();
+  await expect(panel.getByText('models/gemini-9.0-flash is not found for API version v1beta')).toBeVisible();
   await expect(panel.getByRole('button', { name: 'Open settings' })).toBeVisible();
 });

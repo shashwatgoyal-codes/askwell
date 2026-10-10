@@ -13,9 +13,48 @@ export class ImproveError extends Error {
   constructor(
     message: string,
     readonly needsKey = false,
+    /** The provider's own explanation, shown under ours so a failure can be diagnosed. */
+    readonly detail?: string,
   ) {
     super(message);
   }
+}
+
+/** The provider's message from an SDK error, trimmed. Never contains the key: providers don't echo it. */
+function providerDetail(error: unknown): string | undefined {
+  if (!(error instanceof Error)) return undefined;
+  // Gemini's message is the raw JSON body; pull out the human part.
+  const inner = error.message.match(/"message":\s*"((?:[^"\\]|\\.)*)"/)?.[1];
+  const text = (inner ?? error.message).replace(/\\n/g, ' ').replace(/\s+/g, ' ').trim();
+  return text ? text.slice(0, 240) : undefined;
+}
+
+function asImproveError(provider: Provider, model: string, error: unknown): ImproveError {
+  if (error instanceof ImproveError) return error;
+  const detail = providerDetail(error);
+  if (provider === 'anthropic') {
+    if (error instanceof Anthropic.AuthenticationError) return new ImproveError('Anthropic rejected this key.', true, detail);
+    if (error instanceof Anthropic.PermissionDeniedError) return new ImproveError(`This key can’t use ${model}.`, true, detail);
+    if (error instanceof Anthropic.NotFoundError) return new ImproveError(`Anthropic doesn’t know the model ${model}.`, true, detail);
+    if (error instanceof Anthropic.RateLimitError) return new ImproveError('Anthropic is rate limiting this key. Try again shortly.', false, detail);
+    if (error instanceof Anthropic.APIConnectionError) return new ImproveError('Couldn’t reach Anthropic. Check your connection.');
+    if (error instanceof Anthropic.APIError) return new ImproveError(`Anthropic returned an error (${error.status}).`, false, detail);
+  }
+  if (provider === 'openai') {
+    if (error instanceof OpenAI.AuthenticationError) return new ImproveError('OpenAI rejected this key.', true, detail);
+    if (error instanceof OpenAI.NotFoundError) return new ImproveError(`OpenAI doesn’t offer ${model} to this key.`, true, detail);
+    if (error instanceof OpenAI.RateLimitError) return new ImproveError('OpenAI is rate limiting this key. Try again shortly.', false, detail);
+    if (error instanceof OpenAI.APIConnectionError) return new ImproveError('Couldn’t reach OpenAI. Check your connection.');
+    if (error instanceof OpenAI.APIError) return new ImproveError(`OpenAI returned an error (${error.status}).`, false, detail);
+  }
+  if (provider === 'gemini' && error instanceof GeminiError) {
+    if (error.status === 404) return new ImproveError(`Gemini won’t serve ${model} to this key. Pick another model in settings.`, true, detail);
+    if (error.status === 429) return new ImproveError('Gemini is rate limiting this key. Try again shortly.', false, detail);
+    if ([400, 401, 403].includes(error.status)) return new ImproveError('Gemini refused this request.', true, detail);
+    return new ImproveError(`Gemini returned an error (${error.status}).`, false, detail);
+  }
+  if (error instanceof TypeError) return new ImproveError('Couldn’t reach the provider. Check your connection.', false, detail);
+  return new ImproveError('Something went wrong talking to the provider.', false, detail);
 }
 
 // Server-side fallback ("default") is offered on these models only.
@@ -44,14 +83,7 @@ async function viaAnthropic(key: string, model: string, prompt: string, gaps: Ga
     if (response.stop_reason === 'max_tokens') throw new ImproveError('The rewrite ran too long. Try a shorter prompt.');
     return response.content.flatMap((block) => (block.type === 'text' ? [block.text] : [])).join('');
   } catch (error) {
-    if (error instanceof ImproveError) throw error;
-    if (error instanceof Anthropic.AuthenticationError) throw new ImproveError('Anthropic rejected this key.', true);
-    if (error instanceof Anthropic.PermissionDeniedError) throw new ImproveError(`This key can’t use ${model}.`, true);
-    if (error instanceof Anthropic.NotFoundError) throw new ImproveError(`Anthropic doesn’t know the model ${model}.`, true);
-    if (error instanceof Anthropic.RateLimitError) throw new ImproveError('Anthropic is rate limiting this key. Try again shortly.');
-    if (error instanceof Anthropic.APIConnectionError) throw new ImproveError('Couldn’t reach Anthropic. Check your connection.');
-    if (error instanceof Anthropic.APIError) throw new ImproveError(`Anthropic returned an error (${error.status}).`);
-    throw error;
+    throw asImproveError('anthropic', model, error);
   }
 }
 
@@ -66,12 +98,7 @@ async function viaOpenAI(key: string, model: string, prompt: string, gaps: Gap[]
     });
     return response.output_text;
   } catch (error) {
-    if (error instanceof OpenAI.AuthenticationError) throw new ImproveError('OpenAI rejected this key.', true);
-    if (error instanceof OpenAI.NotFoundError) throw new ImproveError(`OpenAI doesn’t offer ${model} to this key.`, true);
-    if (error instanceof OpenAI.RateLimitError) throw new ImproveError('OpenAI is rate limiting this key. Try again shortly.');
-    if (error instanceof OpenAI.APIConnectionError) throw new ImproveError('Couldn’t reach OpenAI. Check your connection.');
-    if (error instanceof OpenAI.APIError) throw new ImproveError(`OpenAI returned an error (${error.status}).`);
-    throw error;
+    throw asImproveError('openai', model, error);
   }
 }
 
@@ -89,17 +116,7 @@ async function viaGemini(key: string, model: string, prompt: string, gaps: Gap[]
     });
     return response.text ?? '';
   } catch (error) {
-    if (error instanceof GeminiError) {
-      if (error.status === 400 || error.status === 401 || error.status === 403) {
-        throw new ImproveError('Gemini rejected this key or model.', true);
-      }
-      if (error.status === 404) {
-        throw new ImproveError(`Gemini doesn’t serve ${model} to this key. Pick another model in settings.`, true);
-      }
-      if (error.status === 429) throw new ImproveError('Gemini is rate limiting this key. Try again shortly.');
-      throw new ImproveError(`Gemini returned an error (${error.status}).`);
-    }
-    throw error;
+    throw asImproveError('gemini', model, error);
   }
 }
 
@@ -120,6 +137,27 @@ export async function improve(provider: Provider, key: string, model: string, pr
   const parsed = Improvement.safeParse(json);
   if (!parsed.success) throw new ImproveError('The model answered in a shape Preflight can’t read. Try again.');
   return parsed.data;
+}
+
+/**
+ * The smallest real request the model can answer: proves the key can use
+ * this model before the user relies on it. Costs a handful of tokens.
+ */
+export async function probeModel(provider: Provider, key: string, model: string): Promise<void> {
+  const ask = 'Reply with the single word OK.';
+  try {
+    if (provider === 'anthropic') {
+      const client = new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true, maxRetries: 0 });
+      await client.messages.create({ model, max_tokens: 1024, messages: [{ role: 'user', content: ask }] });
+    } else if (provider === 'openai') {
+      const client = new OpenAI({ apiKey: key, dangerouslyAllowBrowser: true, maxRetries: 0 });
+      await client.responses.create({ model, input: ask });
+    } else {
+      await new GoogleGenAI({ apiKey: key }).models.generateContent({ model, contents: ask });
+    }
+  } catch (error) {
+    throw asImproveError(provider, model, error);
+  }
 }
 
 // Chat models only: OpenAI's list also holds embeddings, audio and image models.

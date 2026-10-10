@@ -1,7 +1,7 @@
 import type { CheckId, Sensitivity } from '@askwell/rules';
 import { useEffect, useId, useState, type ReactNode } from 'react';
 import { Mark } from '@/components/Mark';
-import type { ModelsRequest, ModelsResponse } from '@/lib/improve/contract';
+import type { ModelsRequest, ModelsResponse, ProbeRequest, ProbeResponse } from '@/lib/improve/contract';
 import {
   PROVIDERS,
   apiKeys,
@@ -93,6 +93,22 @@ function ProviderSection() {
   const [draft, setDraft] = useState('');
   const [list, setList] = useState<Partial<Record<Provider, string[]>>>({});
   const [status, setStatus] = useState<{ kind: 'idle' | 'testing' | 'ok' | 'error'; text?: string }>({ kind: 'idle' });
+  const [modelStatus, setModelStatus] = useState<
+    { kind: 'idle' } | { kind: 'checking' } | { kind: 'ok'; model: string } | { kind: 'error'; text: string; detail?: string }
+  >({ kind: 'idle' });
+
+  // One tiny real request, so a model that won't answer this key is caught
+  // here and not on the first Improve.
+  const probe = async (key: string, model: string) => {
+    setModelStatus({ kind: 'checking' });
+    const request: ProbeRequest = { type: 'probe-model', provider: chosen, key, model };
+    const response = (await browser.runtime.sendMessage(request)) as ProbeResponse;
+    setModelStatus(
+      response.ok
+        ? { kind: 'ok', model }
+        : { kind: 'error', text: response.error.replace(' Pick another model in settings.', ' Try another model above.'), detail: response.detail },
+    );
+  };
   const keyId = useId();
   const modelId = useId();
 
@@ -102,6 +118,7 @@ function ProviderSection() {
   const savedKey = keys[chosen] ?? '';
   useEffect(() => {
     setStatus({ kind: 'idle' });
+    setModelStatus({ kind: 'idle' });
   }, [chosen]);
   useEffect(() => {
     setDraft(savedKey);
@@ -123,12 +140,13 @@ function ProviderSection() {
     }
     await apiKeys.setValue({ ...keys, [chosen]: key });
     setList((prev) => ({ ...prev, [chosen]: response.models }));
-    const current = picked[chosen];
+    let current = picked[chosen];
     if (!current || !response.models.includes(current)) {
-      const fallback = chosen === 'anthropic' && response.models.includes('claude-opus-5-5') ? 'claude-opus-5-5' : response.models[0];
-      if (fallback) await models.setValue({ ...picked, [chosen]: fallback });
+      current = chosen === 'anthropic' && response.models.includes('claude-opus-5-5') ? 'claude-opus-5-5' : response.models[0]!;
+      await models.setValue({ ...picked, [chosen]: current });
     }
     setStatus({ kind: 'ok', text: `Key works · ${response.models.length} ${response.models.length === 1 ? 'model' : 'models'} available` });
+    await probe(key, current);
   };
 
   const remove = async () => {
@@ -186,7 +204,11 @@ function ProviderSection() {
           id={modelId}
           value={picked[chosen] ?? ''}
           disabled={options.length === 0}
-          onChange={(event) => void models.setValue({ ...picked, [chosen]: event.target.value })}
+          onChange={(event) => {
+            const model = event.target.value;
+            void models.setValue({ ...picked, [chosen]: model });
+            if (savedKey) void probe(savedKey, model);
+          }}
           className={`${input} font-sans disabled:text-subtle`}
         >
           {options.length === 0 && <option value="">Test a key to see its models</option>}
@@ -196,6 +218,18 @@ function ProviderSection() {
             </option>
           ))}
         </select>
+        {modelStatus.kind === 'checking' && <span className="font-mono text-xs text-subtle">Checking the model answers…</span>}
+        {modelStatus.kind === 'ok' && <span className="font-mono text-xs text-ink">✓ {modelStatus.model} answers this key</span>}
+        {modelStatus.kind === 'error' && (
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs text-[#ff9a9f]">{modelStatus.text}</span>
+            {modelStatus.detail && (
+              <span className="rounded-lg border border-edge bg-surface px-2.5 py-2 font-mono text-[11.5px] break-words text-subtle">
+                {modelStatus.detail}
+              </span>
+            )}
+          </div>
+        )}
         <span className="text-[12.5px] text-subtle">
           Each Improve is one short request, billed by {name} to your key.
         </span>

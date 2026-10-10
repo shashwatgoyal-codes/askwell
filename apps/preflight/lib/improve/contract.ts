@@ -72,9 +72,12 @@ export function userMessage(prompt: string, gaps: Gap[]): string {
 export type ImproveRequest = { type: 'improve'; prompt: string; gaps: Gap[] };
 export type ImproveResponse =
   | { ok: true; improvement: Improvement; model: string }
-  | { ok: false; error: string; needsKey?: boolean };
+  | { ok: false; error: string; needsKey?: boolean; detail?: string };
 
 export type ModelsRequest = { type: 'list-models'; provider: import('../settings').Provider; key: string };
 export type ModelsResponse = { ok: true; models: string[] } | { ok: false; error: string };
+
+export type ProbeRequest = { type: 'probe-model'; provider: import('../settings').Provider; key: string; model: string };
+export type ProbeResponse = { ok: true } | { ok: false; error: string; detail?: string };
 
 export type { CheckId };

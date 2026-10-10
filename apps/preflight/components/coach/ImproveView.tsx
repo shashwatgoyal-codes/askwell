@@ -12,7 +12,7 @@ const KIND_LABEL: Record<Improvement['changes'][number]['kind'], string> = {
 export type ImproveState =
   | { status: 'idle' }
   | { status: 'loading' }
-  | { status: 'error'; error: string; needsKey: boolean }
+  | { status: 'error'; error: string; needsKey: boolean; detail?: string }
   | { status: 'done'; improvement: Improvement; model: string; draft: string };
 
 /** Split the rewrite into plain and added runs, using the exact spans the model reported. */
@@ -60,6 +60,11 @@ export function ImproveView({ state, draft, onRetry }: Props) {
     return (
       <div className="flex flex-col gap-2 p-4">
         <p className="text-sm leading-normal">{state.error}</p>
+        {state.detail && (
+          <p className="rounded-lg border border-edge bg-canvas/50 px-2.5 py-2 font-mono text-[11.5px] leading-normal break-words text-subtle">
+            {state.detail}
+          </p>
+        )}
         <p className="text-[13px] leading-normal text-muted">
           {state.needsKey
             ? 'Improve uses your own API key, set in Preflight’s settings.'

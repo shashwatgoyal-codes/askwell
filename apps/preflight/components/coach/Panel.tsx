@@ -41,7 +41,7 @@ export function Panel({ draft, gaps, onClose, onMute, onApply }: Props) {
       setImprove(
         response.ok
           ? { status: 'done', improvement: response.improvement, model: response.model, draft }
-          : { status: 'error', error: response.error, needsKey: Boolean(response.needsKey) },
+          : { status: 'error', error: response.error, needsKey: Boolean(response.needsKey), detail: response.detail },
       );
     } catch {
       // The extension was reloaded under this page; its old scripts can't reach the new worker.
