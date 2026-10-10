@@ -50,8 +50,10 @@ the Firefox build as unlisted (signed by Mozilla, not listed publicly) so it ins
 
 - The checks run inside your browser. Preflight has no server, no account and no analytics.
 - Your API key is stored only in the extension's local storage on your device.
-- Text leaves your browser only when you click **Improve** or **Summary**, and then it goes only to the
-  AI provider whose key you entered, under that provider's terms.
+- Text leaves your browser only when you click **Improve**, and then it goes only to the AI provider
+  whose key you entered, under that provider's terms. The end-of-session summary is asked of the chat
+  you are already in, so it sends nothing anywhere new.
+- Today's counts in the popup are numbers only; your prompts are never stored.
 - Preflight never sends a message for you. It can fill the chat box; you always press Send.
 
 ## Not affiliated

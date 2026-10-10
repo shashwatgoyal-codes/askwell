@@ -40,7 +40,8 @@ Pushing a `preflight-v<version>` tag runs `release.yml`, which publishes the zip
   files and anything shaped like a real API key or private key. Tests use obviously fake keys.
 - **Bring your own key.** A user's API key stays in `storage.local` in the extension and goes only to
   the provider. It never reaches a server of ours and is never logged.
-- **Checks run locally.** Nothing leaves the browser unless the user clicks Improve or Summary.
+- **Checks run locally.** Nothing leaves the browser unless the user clicks Improve. Nudge templates,
+  including the session summary, go into the chat the user is already in.
 - **No store publishing.** Builds are loaded unpacked; Firefox uses unlisted signing.
 - **Design:** neutral near-black, one coral accent (`#FF6B4A` dark / `#D2401F` light), Geist and Geist
   Mono, hairline borders. The mockups are on the design canvas.
