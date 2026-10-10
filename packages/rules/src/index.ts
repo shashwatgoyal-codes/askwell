@@ -132,3 +132,4 @@ export function runChecks(prompt: string, options: CheckOptions = {}): Gap[] {
   }
   return gaps;
 }
+export { checkSession, type Nudge, type NudgeId, type Session } from './session';

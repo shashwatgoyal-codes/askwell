@@ -17,6 +17,36 @@ export const disabledSites = storage.defineItem<string[]>('local:disabledSites',
   fallback: [],
 });
 
+/** Nudges about habits across the conversation, separate from the per-prompt checks. */
+export const conversationCoaching = storage.defineItem<boolean>('local:conversationCoaching', {
+  fallback: true,
+});
+
+export interface DayStats {
+  day: string;
+  checked: number;
+  gaps: number;
+  byCheck: Partial<Record<CheckId, number>>;
+}
+
+/** Today's counts for the popup. Counts only: never the prompts themselves. */
+export const stats = storage.defineItem<DayStats>('local:stats', {
+  fallback: { day: '', checked: 0, gaps: 0, byCheck: {} },
+});
+
+export function today(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+export async function recordSent(gapIds: CheckId[]): Promise<void> {
+  const current = await stats.getValue();
+  const base = current.day === today() ? current : { day: today(), checked: 0, gaps: 0, byCheck: {} };
+  const byCheck = { ...base.byCheck };
+  for (const id of gapIds) byCheck[id] = (byCheck[id] ?? 0) + 1;
+  await stats.setValue({ day: base.day, checked: base.checked + 1, gaps: base.gaps + gapIds.length, byCheck });
+}
+
 export type Provider = 'anthropic' | 'openai' | 'gemini';
 
 export const PROVIDERS: { id: Provider; name: string; keyHint: string }[] = [

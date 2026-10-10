@@ -6,6 +6,7 @@ import {
   PROVIDERS,
   apiKeys,
   clearAll,
+  conversationCoaching,
   disabledChecks,
   disabledSites,
   models,
@@ -203,6 +204,7 @@ function ChecksSection() {
   const level = useStored(sensitivityItem, 'balanced' as Sensitivity);
   const off = useStored(disabledChecks, [] as CheckId[]);
   const sitesOff = useStored(disabledSites, [] as string[]);
+  const coaching = useStored(conversationCoaching, true);
 
   const flip = <T,>(list: T[], item: T, on: boolean) => (on ? list.filter((x) => x !== item) : [...list, item]);
 
@@ -237,6 +239,13 @@ function ChecksSection() {
             </li>
           );
         })}
+        <li className="flex items-center justify-between gap-4 rounded-b-xl border-t border-edge bg-surface/60 px-4 py-3.5">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-sm">Conversation coaching</span>
+            <span className="text-[12.5px] text-subtle">Nudges for errors sent one by one, repeated fixes, and long sessions</span>
+          </div>
+          <Toggle label="Conversation coaching" on={coaching} onChange={(on) => void conversationCoaching.setValue(on)} />
+        </li>
       </ul>
       <ul className="flex flex-col rounded-xl border border-edge">
         {SITES.map((site) => (

@@ -7,6 +7,8 @@ export interface Site {
   name: string;
   hosts: string[];
   selectors: string[];
+  /** The person's own earlier messages in the open chat. */
+  userMessages: string[];
 }
 
 export const SITES: Site[] = [
@@ -16,12 +18,14 @@ export const SITES: Site[] = [
     hosts: ['chatgpt.com'],
     // Desktop uses a ProseMirror editor; narrow windows swap in a textarea.
     selectors: ['#prompt-textarea[contenteditable="true"]', '#prompt-textarea', '#mobile-composer-prompt', 'form textarea'],
+    userMessages: ['[data-message-author-role="user"]'],
   },
   {
     id: 'claude',
     name: 'Claude',
     hosts: ['claude.ai'],
     selectors: ['div.ProseMirror[contenteditable="true"]', '[data-testid="chat-input"]', 'fieldset [contenteditable="true"]'],
+    userMessages: ['[data-testid="user-message"]'],
   },
   {
     id: 'gemini',
@@ -29,6 +33,7 @@ export const SITES: Site[] = [
     hosts: ['gemini.google.com'],
     // rich-textarea also holds a hidden .ql-clipboard; skip it.
     selectors: ['rich-textarea .ql-editor[contenteditable="true"]', 'rich-textarea [contenteditable="true"]:not(.ql-clipboard)'],
+    userMessages: ['user-query .query-text', 'user-query'],
   },
 ];
 
@@ -49,6 +54,15 @@ export function findComposer(site: Site): HTMLElement | null {
     if (matches.length) return matches[matches.length - 1]!;
   }
   return null;
+}
+
+/** The last `limit` messages the person sent in this chat, oldest first. Read only from the page; never stored. */
+export function readUserMessages(site: Site, limit = 12): string[] {
+  for (const selector of site.userMessages) {
+    const found = [...document.querySelectorAll<HTMLElement>(selector)];
+    if (found.length) return found.slice(-limit).map((el) => el.innerText.trim()).filter(Boolean);
+  }
+  return [];
 }
 
 export function readText(el: HTMLElement): string {

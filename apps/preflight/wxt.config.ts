@@ -18,7 +18,8 @@ export default defineConfig({
     name: 'Preflight',
     description: 'Checks your AI prompt before you send it. By Askwell.',
     homepage_url: 'https://github.com/shashwatgoyal-codes',
-    permissions: ['storage'],
+    // activeTab: the popup reads which site the current tab is on, only when opened.
+    permissions: ['storage', 'activeTab'],
     // Improve calls the provider whose key the user entered, from the
     // background worker only.
     host_permissions: [
